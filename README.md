@@ -41,9 +41,10 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 5. Copy the Webhook URL.
 
 ### For a Direct Message (DM)
-Google Chat does not have a native DM webhook UI. Instead:
-1. Create a 1:1 Space with the person you want to DM.
-2. Add a webhook to that space (same steps as above).
+1. Open Google Chat and go to the DM thread with the person.
+2. Click their **name at the top** of the conversation → **Apps & Integrations**.
+3. Click **Webhooks** → **Add Webhook**.
+4. Give it a name, click **Save**, and copy the Webhook URL.
 
 ---
 
