@@ -169,11 +169,15 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
      * @param array $form   GF form array.
      */
     public function process_feed( $feed, $entry, $form ) {
-        $settings = rgar( $feed, 'meta' );
+        $settings  = rgar( $feed, 'meta' );
+        $feed_name = rgar( $settings, 'feed_name', 'Google Chat Notification' );
+        $entry_id  = absint( rgar( $entry, 'id' ) );
 
         $webhook_url = trim( rgar( $settings, 'webhook_url' ) );
         if ( empty( $webhook_url ) ) {
-            $this->log_error( __METHOD__ . '(): Webhook URL is empty — skipping feed ID ' . rgar( $feed, 'id' ) );
+            $msg = sprintf( '❌ Google Chat Notifier [%s]: Webhook URL is empty — feed not sent.', $feed_name );
+            $this->log_error( __METHOD__ . '(): ' . $msg );
+            $this->add_entry_note( $entry_id, $msg, 'error' );
             return;
         }
 
@@ -195,20 +199,32 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
         );
 
         if ( is_wp_error( $response ) ) {
-            $this->log_error(
-                __METHOD__ . '(): wp_remote_post error — ' . $response->get_error_message()
+            $error_msg = $response->get_error_message();
+            $this->log_error( __METHOD__ . '(): wp_remote_post error — ' . $error_msg );
+            $this->add_entry_note(
+                $entry_id,
+                sprintf( '❌ Google Chat Notifier [%s]: Failed to send — %s', $feed_name, $error_msg ),
+                'error'
             );
             return;
         }
 
         $code = wp_remote_retrieve_response_code( $response );
+        $body = wp_remote_retrieve_body( $response );
+
         if ( $code < 200 || $code >= 300 ) {
-            $this->log_error(
-                __METHOD__ . '(): Google Chat returned HTTP ' . $code . ' — ' . wp_remote_retrieve_body( $response )
+            $this->log_error( __METHOD__ . '(): Google Chat returned HTTP ' . $code . ' — ' . $body );
+            $this->add_entry_note(
+                $entry_id,
+                sprintf( '❌ Google Chat Notifier [%s]: HTTP %d error — %s', $feed_name, $code, $body ),
+                'error'
             );
         } else {
-            $this->log_debug(
-                __METHOD__ . '(): Notification sent successfully. HTTP ' . $code
+            $this->log_debug( __METHOD__ . '(): Notification sent successfully. HTTP ' . $code );
+            $this->add_entry_note(
+                $entry_id,
+                sprintf( '✅ Google Chat Notifier [%s]: Message sent successfully.', $feed_name ),
+                'success'
             );
         }
     }

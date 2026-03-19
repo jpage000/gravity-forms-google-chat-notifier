@@ -78,5 +78,9 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.1.0
+- Added explicit entry notes labeled **"Google Chat Notifier [Feed Name]"** on success and failure — clearly distinguishable from other webhook feeds in the GF entry detail view
+- Error notes include the HTTP status code and response body for easier debugging
+
 ### 1.0.0
 - Initial release
