@@ -78,6 +78,11 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.2.2
+- Rewrote feed processing: now uses a direct `gform_after_submission` hook with `GFAPI::get_feeds()` instead of relying on GFFeedAddOn's internal processing pipeline, which was silently failing to call `process_feed()`
+- GFFeedAddOn is now used for the admin settings UI and feed storage only
+- Added `error_log()` output for every send attempt (check server PHP error log for diagnostics)
+
 ### 1.2.1
 - Fixed silent PHP failure: constants `GFGC_VERSION` and `GFGC_PLUGIN_FILE` moved from class property defaults into the constructor so they resolve correctly at runtime — this was preventing the add-on from registering its hooks entirely
 
