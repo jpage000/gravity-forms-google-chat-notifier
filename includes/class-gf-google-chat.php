@@ -17,11 +17,11 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = GFGC_VERSION;
+    protected $_version                  = '1.3.0';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
-    protected $_full_path                = GFGC_PLUGIN_FILE;
+    protected $_full_path                = '';
     protected $_title                    = 'Google Chat Notifier';
     protected $_short_title              = 'Google Chat';
 
@@ -38,6 +38,16 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             self::$_instance = new self();
         }
         return self::$_instance;
+    }
+
+    /**
+     * Constructor — set runtime-dependent properties before GF's parent
+     * constructor registers hooks.
+     */
+    public function __construct() {
+        $this->_full_path = GFGC_PLUGIN_FILE;
+        $this->_version   = GFGC_VERSION;
+        parent::__construct();
     }
 
     // -------------------------------------------------------------------------

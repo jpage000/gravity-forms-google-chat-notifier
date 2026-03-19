@@ -78,6 +78,9 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.3.0
+- Fixed silent PHP failure: constants `GFGC_VERSION` and `GFGC_PLUGIN_FILE` moved from class property defaults into the constructor so they resolve correctly at runtime — this was preventing the add-on from registering its hooks entirely
+
 ### 1.2.0
 - Fixed feed reprocessing batch error — `$_full_path` now correctly points to the main plugin file so GF can initialize the add-on during background/batch processing
 
