@@ -21,7 +21,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
-    protected $_full_path                = __FILE__;
+    protected $_full_path                = GFGC_PLUGIN_FILE;
     protected $_title                    = 'Google Chat Notifier';
     protected $_short_title              = 'Google Chat';
 

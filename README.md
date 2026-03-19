@@ -78,6 +78,9 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.2.0
+- Fixed feed reprocessing batch error — `$_full_path` now correctly points to the main plugin file so GF can initialize the add-on during background/batch processing
+
 ### 1.1.0
 - Added explicit entry notes labeled **"Google Chat Notifier [Feed Name]"** on success and failure — clearly distinguishable from other webhook feeds in the GF entry detail view
 - Error notes include the HTTP status code and response body for easier debugging
