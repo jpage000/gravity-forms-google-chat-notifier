@@ -78,6 +78,9 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.4.0
+- **"Resend to Google Chat" entry action** — bypasses GF's batch system entirely; appears in the entry detail Actions menu and re-fires our direct hook immediately; shows an admin notice and entry note with the result
+
 ### 1.3.5
 - **Fixed Feed Forge batch error** — removed custom constructor calling `parent::__construct()` (conflicted with GF's batch processor instantiation); replaced with `is_active()` override returning `true` and `init()` override for hooks
 

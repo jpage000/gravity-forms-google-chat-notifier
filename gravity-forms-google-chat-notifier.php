@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      1.3.5
+ * Version:      1.4.0
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '1.3.5' );
+define( 'GFGC_VERSION', '1.4.0' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -110,4 +110,91 @@ function gfgc_add_note( int $entry_id, string $message ) {
         GFFormsModel::add_note( $entry_id, 0, 'Google Chat Notifier', $message );
     }
     error_log( 'GFGC: ' . $message );
+}
+
+// ─── "Resend to Google Chat" entry action (bypasses batch system) ─────────────
+
+/**
+ * Add a "Resend to Google Chat" item to the GF entry detail actions.
+ */
+add_filter( 'gform_entry_actions', 'gfgc_add_entry_action', 10, 2 );
+
+function gfgc_add_entry_action( $actions, $entry ) {
+    if ( empty( $entry['id'] ) || empty( $entry['form_id'] ) ) {
+        return $actions;
+    }
+
+    $url = wp_nonce_url(
+        admin_url(
+            'admin.php?gfgc_resend=1&entry_id=' . absint( $entry['id'] )
+            . '&form_id=' . absint( $entry['form_id'] )
+        ),
+        'gfgc_resend_' . $entry['id']
+    );
+
+    $actions['gfgc_resend'] = [
+        'label'      => '💬 Resend to Google Chat',
+        'url'        => $url,
+        'menu_class' => 'gfgc-resend',
+    ];
+
+    return $actions;
+}
+
+/**
+ * Handle the resend request on admin_init (before any output).
+ */
+add_action( 'admin_init', 'gfgc_maybe_handle_resend' );
+
+function gfgc_maybe_handle_resend() {
+    if ( ! isset( $_GET['gfgc_resend'] ) ) {
+        return;
+    }
+
+    $entry_id = absint( rgar( $_GET, 'entry_id' ) );
+    $form_id  = absint( rgar( $_GET, 'form_id' ) );
+
+    if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'gfgc_resend_' . $entry_id ) ) {
+        wp_die( 'Invalid security token.' );
+    }
+
+    if ( ! current_user_can( 'edit_others_posts' ) ) {
+        wp_die( 'Insufficient permissions.' );
+    }
+
+    if ( ! class_exists( 'GFAPI' ) || ! class_exists( 'GF_Google_Chat_Message' ) ) {
+        wp_die( 'Gravity Forms or Google Chat Notifier not loaded.' );
+    }
+
+    $entry = GFAPI::get_entry( $entry_id );
+    $form  = GFAPI::get_form( $form_id );
+
+    $status = 'error';
+    if ( ! is_wp_error( $entry ) && is_array( $form ) ) {
+        gfgc_process_submission( $entry, $form );
+        $status = 'sent';
+    }
+
+    wp_safe_redirect(
+        admin_url(
+            'admin.php?page=gf_entries&view=entry&id=' . $form_id
+            . '&lid=' . $entry_id
+            . '&gfgc_status=' . $status
+        )
+    );
+    exit;
+}
+
+/**
+ * Show admin notice after a manual resend.
+ */
+add_action( 'admin_notices', 'gfgc_resend_admin_notice' );
+
+function gfgc_resend_admin_notice() {
+    $status = sanitize_text_field( wp_unslash( $_GET['gfgc_status'] ?? '' ) );
+    if ( $status === 'sent' ) {
+        echo '<div class="notice notice-success is-dismissible"><p>✅ <strong>Google Chat Notifier:</strong> Notification(s) sent. Check the entry notes for details.</p></div>';
+    } elseif ( $status === 'error' ) {
+        echo '<div class="notice notice-error is-dismissible"><p>❌ <strong>Google Chat Notifier:</strong> Failed to send. Check the entry notes and PHP error log.</p></div>';
+    }
 }
