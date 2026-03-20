@@ -55,6 +55,9 @@ class GF_Google_Chat_Message {
         // wp_kses() allows the subset of HTML that Google Chat Cards v2 supports
         // in textParagraph: bold, italic, underline, strikethrough, colour, links.
         if ( $body !== '' ) {
+            // Convert markdown shortcuts to HTML that Google Chat accepts.
+            $body = $this->markdown_to_html( $body );
+
             $allowed_tags = [
                 'b'      => [],
                 'strong' => [],
@@ -70,7 +73,7 @@ class GF_Google_Chat_Message {
             ];
             $widgets[] = [
                 'textParagraph' => [
-                    'text' => nl2br( wp_kses( $body, $allowed_tags ) ),
+                    'text' => str_replace( [ "\r\n", "\r", "\n" ], '<br>', wp_kses( $body, $allowed_tags ) ),
                 ],
             ];
         }
@@ -124,6 +127,31 @@ class GF_Google_Chat_Message {
             return '';
         }
         return GFCommon::replace_variables( $text, $this->form, $this->entry, false, false, false, 'text' );
+    }
+
+    /**
+     * Convert markdown-style shortcuts to HTML for Google Chat Cards v2.
+     *
+     * Supported shortcuts (safe to type in any textarea without triggering
+     * GF/WordPress HTML sanitization):
+     *   **text**   → <b>text</b>   (bold)
+     *   _text_     → <i>text</i>   (italic)
+     *   ~~text~~   → <s>text</s>   (strikethrough)
+     *   __text__   → <u>text</u>   (underline)
+     */
+    private function markdown_to_html( string $text ): string {
+        // Order matters: bold+italic before bold before italic.
+        // Bold+italic: ***text*** or ___text___
+        $text = preg_replace( '/\*{3}(.+?)\*{3}/s', '<b><i>$1</i></b>', $text );
+        // Bold: **text**
+        $text = preg_replace( '/\*{2}(.+?)\*{2}/s', '<b>$1</b>', $text );
+        // Underline: __text__  (before italic _ to avoid conflict)
+        $text = preg_replace( '/_{2}(.+?)_{2}/s', '<u>$1</u>', $text );
+        // Italic: _text_
+        $text = preg_replace( '/(?<![a-zA-Z0-9_])_(.+?)_(?![a-zA-Z0-9_])/s', '<i>$1</i>', $text );
+        // Strikethrough: ~~text~~
+        $text = preg_replace( '/~{2}(.+?)~{2}/s', '<s>$1</s>', $text );
+        return $text;
     }
 
     /**
