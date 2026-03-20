@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      1.4.0
+ * Version:      1.4.1
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '1.4.0' );
+define( 'GFGC_VERSION', '1.4.1' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -112,33 +112,39 @@ function gfgc_add_note( int $entry_id, string $message ) {
     error_log( 'GFGC: ' . $message );
 }
 
-// ─── "Resend to Google Chat" entry action (bypasses batch system) ─────────────
+// ─── "Resend to Google Chat" sidebar meta box on entry detail ─────────────────
 
 /**
- * Add a "Resend to Google Chat" item to the GF entry detail actions.
+ * Register a sidebar meta box on the GF entry detail page.
  */
-add_filter( 'gform_entry_actions', 'gfgc_add_entry_action', 10, 2 );
+add_filter( 'gform_entry_detail_meta_boxes', 'gfgc_register_resend_meta_box', 10, 3 );
 
-function gfgc_add_entry_action( $actions, $entry ) {
-    if ( empty( $entry['id'] ) || empty( $entry['form_id'] ) ) {
-        return $actions;
-    }
+function gfgc_register_resend_meta_box( $meta_boxes, $form, $entry ) {
+    $meta_boxes['gfgc_resend'] = [
+        'title'    => '💬 Google Chat Notifier',
+        'callback' => 'gfgc_render_resend_meta_box',
+        'context'  => 'side',
+    ];
+    return $meta_boxes;
+}
+
+/**
+ * Render the meta box content.
+ */
+function gfgc_render_resend_meta_box( $args ) {
+    $entry = rgar( $args, 'entry' );
+    $form  = rgar( $args, 'form' );
 
     $url = wp_nonce_url(
         admin_url(
             'admin.php?gfgc_resend=1&entry_id=' . absint( $entry['id'] )
-            . '&form_id=' . absint( $entry['form_id'] )
+            . '&form_id=' . absint( $form['id'] )
         ),
         'gfgc_resend_' . $entry['id']
     );
 
-    $actions['gfgc_resend'] = [
-        'label'      => '💬 Resend to Google Chat',
-        'url'        => $url,
-        'menu_class' => 'gfgc-resend',
-    ];
-
-    return $actions;
+    echo '<p style="margin:0">Re-fire all active Google Chat feeds for this entry.</p>';
+    echo '<p style="margin:8px 0 0"><a href="' . esc_url( $url ) . '" class="button button-primary" style="width:100%;text-align:center;box-sizing:border-box">Resend Now</a></p>';
 }
 
 /**
