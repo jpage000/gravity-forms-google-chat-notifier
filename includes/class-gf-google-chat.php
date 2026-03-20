@@ -138,8 +138,9 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
 
             // ── Section 3: Buttons ────────────────────────────────────────
             [
-                'title'  => 'Buttons',
-                'fields' => [
+                'title'       => 'Buttons',
+                'description' => 'Add up to 5 custom link buttons to the card. Leave a row blank to skip it. URLs support merge tags like <code>{entry_id}</code>.',
+                'fields'      => [
                     [
                         'name'    => 'include_entry_link',
                         'label'   => 'View Entry Button',
@@ -153,29 +154,76 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                             ],
                         ],
                     ],
+                    // ── Button slots 1–5 ──────────────────────────────────
                     [
-                        'name'   => 'buttons',
-                        'label'  => 'Custom Buttons',
-                        'type'   => 'repeater',
-                        'tooltip' => 'Add one row per button. Label is the button text; URL supports merge tags like {entry_id}.',
-                        'add_button_text'    => '+ Add Button',
-                        'remove_button_text' => '−',
-                        'fields' => [
-                            [
-                                'name'        => 'button_label',
-                                'label'       => 'Label',
-                                'type'        => 'text',
-                                'class'       => 'medium',
-                                'placeholder' => 'e.g. View CRM',
-                            ],
-                            [
-                                'name'        => 'button_url',
-                                'label'       => 'URL',
-                                'type'        => 'text',
-                                'class'       => 'large merge-tag-support mt-position-right mt-hide_all_fields',
-                                'placeholder' => 'https://yourcrm.com/lead/{entry_id}',
-                            ],
-                        ],
+                        'name'  => 'btn1_label',
+                        'label' => 'Button 1 — Label',
+                        'type'  => 'text',
+                        'class' => 'medium',
+                        'placeholder' => 'e.g. View CRM',
+                    ],
+                    [
+                        'name'  => 'btn1_url',
+                        'label' => 'Button 1 — URL',
+                        'type'  => 'text',
+                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
+                        'placeholder' => 'https://yourcrm.com/lead/{entry_id}',
+                    ],
+                    [
+                        'name'  => 'btn2_label',
+                        'label' => 'Button 2 — Label',
+                        'type'  => 'text',
+                        'class' => 'medium',
+                        'placeholder' => 'e.g. Open Policy',
+                    ],
+                    [
+                        'name'  => 'btn2_url',
+                        'label' => 'Button 2 — URL',
+                        'type'  => 'text',
+                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
+                        'placeholder' => 'https://...',
+                    ],
+                    [
+                        'name'  => 'btn3_label',
+                        'label' => 'Button 3 — Label',
+                        'type'  => 'text',
+                        'class' => 'medium',
+                        'placeholder' => 'e.g. Run Quote',
+                    ],
+                    [
+                        'name'  => 'btn3_url',
+                        'label' => 'Button 3 — URL',
+                        'type'  => 'text',
+                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
+                        'placeholder' => 'https://...',
+                    ],
+                    [
+                        'name'  => 'btn4_label',
+                        'label' => 'Button 4 — Label',
+                        'type'  => 'text',
+                        'class' => 'medium',
+                        'placeholder' => '',
+                    ],
+                    [
+                        'name'  => 'btn4_url',
+                        'label' => 'Button 4 — URL',
+                        'type'  => 'text',
+                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
+                        'placeholder' => 'https://...',
+                    ],
+                    [
+                        'name'  => 'btn5_label',
+                        'label' => 'Button 5 — Label',
+                        'type'  => 'text',
+                        'class' => 'medium',
+                        'placeholder' => '',
+                    ],
+                    [
+                        'name'  => 'btn5_url',
+                        'label' => 'Button 5 — URL',
+                        'type'  => 'text',
+                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
+                        'placeholder' => 'https://...',
                     ],
                 ],
             ],

@@ -143,15 +143,12 @@ class GF_Google_Chat_Message {
             $buttons[] = $this->make_button( '📋 View Entry', $entry_url, true );
         }
 
-        // Custom buttons from the repeater field.
-        $custom_buttons = rgar( $this->settings, 'buttons' );
-        if ( is_array( $custom_buttons ) ) {
-            foreach ( $custom_buttons as $row ) {
-                $label = trim( rgar( $row, 'button_label' ) );
-                $url   = trim( $this->merge( rgar( $row, 'button_url' ) ) );
-                if ( $label !== '' && $url !== '' ) {
-                    $buttons[] = $this->make_button( $label, $url );
-                }
+        // Custom buttons from fixed slots 1–5.
+        for ( $i = 1; $i <= 5; $i++ ) {
+            $label = trim( rgar( $this->settings, "btn{$i}_label" ) );
+            $url   = trim( $this->merge( rgar( $this->settings, "btn{$i}_url" ) ) );
+            if ( $label !== '' && $url !== '' ) {
+                $buttons[] = $this->make_button( $label, $url );
             }
         }
 
