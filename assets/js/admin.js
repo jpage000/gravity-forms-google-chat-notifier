@@ -10,7 +10,12 @@
 
 	$( document ).ready( function () {
 
-		// ── Media Library picker for Card Icon URL ────────────────────────────
+		// ── Subtitle: constrain textarea to single-line height (same look as title) ──
+		$( 'textarea[name="_gform_setting_notification_subtitle"]' ).css( {
+			height: '32px', minHeight: '32px', maxHeight: '32px',
+			resize: 'none', overflow: 'hidden', lineHeight: '20px', padding: '5px 8px',
+		} );
+
 		var $input = $( 'input[name="_gform_setting_card_icon_url"]' );
 		if ( $input.length ) {
 			var $btn     = $( '<button type="button" class="button" style="margin-left:6px;">📁 Select Image</button>' );
