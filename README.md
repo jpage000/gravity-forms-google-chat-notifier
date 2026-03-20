@@ -78,6 +78,9 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.3.2
+- **HTML formatting in card body** — `<b>`, `<i>`, `<u>`, `<s>`, `<font color="">`, `<a href="">` tags now pass through to Google Chat instead of being escaped as plain text
+
 ### 1.3.1
 - **Media Library icon picker** — "Card Icon URL" field now has a "📁 Select Image" button that opens the WordPress Media Library, with a live circular thumbnail preview
 

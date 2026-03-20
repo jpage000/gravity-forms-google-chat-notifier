@@ -52,10 +52,25 @@ class GF_Google_Chat_Message {
         $widgets = [];
 
         // Body paragraph — only add if non-empty.
+        // wp_kses() allows the subset of HTML that Google Chat Cards v2 supports
+        // in textParagraph: bold, italic, underline, strikethrough, colour, links.
         if ( $body !== '' ) {
+            $allowed_tags = [
+                'b'      => [],
+                'strong' => [],
+                'i'      => [],
+                'em'     => [],
+                'u'      => [],
+                's'      => [],
+                'del'    => [],
+                'strike' => [],
+                'font'   => [ 'color' => [] ],
+                'a'      => [ 'href' => [], 'target' => [] ],
+                'br'     => [],
+            ];
             $widgets[] = [
                 'textParagraph' => [
-                    'text' => nl2br( esc_html( $body ) ),
+                    'text' => nl2br( wp_kses( $body, $allowed_tags ) ),
                 ],
             ];
         }

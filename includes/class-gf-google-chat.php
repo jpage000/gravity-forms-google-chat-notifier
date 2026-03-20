@@ -130,7 +130,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                         'label'   => 'Card Body',
                         'type'    => 'textarea',
                         'class'   => 'large merge-tag-support mt-position-right mt-hide_all_fields',
-                        'tooltip' => 'Main content of the card. Supports merge tags and newlines.',
+                        'tooltip' => 'Main content of the card. Supports merge tags and newlines.<br><br><strong>Formatting:</strong> <code>&lt;b&gt;</code> bold, <code>&lt;i&gt;</code> italic, <code>&lt;u&gt;</code> underline, <code>&lt;s&gt;</code> strikethrough, <code>&lt;font color="#hex"&gt;</code> colour, <code>&lt;a href=""&gt;</code> link.',
                         'default_value' => "Name: {Name (First):1.3} {Name (Last):1.6}\nEmail: {Email:2}\nPhone: {Phone:3}\n\n{all_fields}",
                     ],
                 ],
