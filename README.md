@@ -78,6 +78,9 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.3.4
+- **Fixed Feed Forge / reprocessing** — added `gform_allow_feed_reprocessing` filter returning `true` for our feeds; GFFeedAddOn defaults this to `false` and silently skips `process_feed()` during all manual reprocessing (including Gravity Wiz Feed Forge)
+
 ### 1.3.3
 - **Fixed custom buttons** — replaced non-rendering `repeater` field with 5 fixed Label + URL slot pairs that work in all GF versions; empty slots are ignored
 

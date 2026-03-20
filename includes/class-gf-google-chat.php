@@ -48,6 +48,18 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
         $this->_full_path = GFGC_PLUGIN_FILE;
         $this->_version   = GFGC_VERSION;
         parent::__construct();
+
+        // Allow Feed Forge and GF's native reprocessing to call process_feed().
+        // gform_allow_feed_reprocessing defaults to false, which silently skips
+        // our feed during any manual reprocess.
+        add_filter( 'gform_allow_feed_reprocessing', [ $this, 'allow_feed_reprocessing' ], 10, 5 );
+    }
+
+    /**
+     * Allow reprocessing for our own feeds.
+     */
+    public function allow_feed_reprocessing( $allow, $feed, $entry, $form, $addon ) {
+        return ( $addon instanceof self ) ? true : $allow;
     }
 
     /**
@@ -287,9 +299,8 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             return;
         }
 
-        // Build the card payload — map generic_map rows to the expected structure.
-        $settings['buttons'] = $this->normalize_buttons( rgar( $settings, 'buttons' ) );
-
+        // Button data (btn1_label/btn1_url…btn5_label/btn5_url) is read directly
+        // from $settings by GF_Google_Chat_Message — no normalization needed.
         $message_builder = new GF_Google_Chat_Message( $form, $entry, $settings );
         $payload         = $message_builder->build();
 
