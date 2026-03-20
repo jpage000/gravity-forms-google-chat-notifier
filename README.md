@@ -78,6 +78,11 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.3.0
+- **Custom icon per feed** — new "Card Icon URL" field in feed settings; leave blank to use the default icon
+- **Fixed buttons** — switched from `generic_map` to `repeater` field; `generic_map` was storing free-text entries under `custom_key`/`custom_value` instead of `key`/`value`, causing custom buttons to be ignored
+- **Fixed feed reprocessing** — added `supports_async_feed_processing() = false` to skip GF's batch system on manual reprocess
+
 ### 1.2.2
 - Rewrote feed processing: now uses a direct `gform_after_submission` hook with `GFAPI::get_feeds()` instead of relying on GFFeedAddOn's internal processing pipeline, which was silently failing to call `process_feed()`
 - GFFeedAddOn is now used for the admin settings UI and feed storage only

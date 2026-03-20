@@ -78,7 +78,9 @@ class GF_Google_Chat_Message {
                         'header' => [
                             'title'    => $title,
                             'subtitle' => $subtitle,
-                            'imageUrl' => 'https://www.gstatic.com/images/icons/material/system/2x/assignment_turned_in_black_48dp.png',
+                            'imageUrl' => ! empty( $this->settings['card_icon_url'] )
+                                ? esc_url_raw( $this->settings['card_icon_url'] )
+                                : 'https://www.gstatic.com/images/icons/material/system/2x/assignment_turned_in_black_48dp.png',
                             'imageType' => 'CIRCLE',
                         ],
                         'sections' => [

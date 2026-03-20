@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      1.2.2
+ * Version:      1.3.0
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '1.2.2' );
+define( 'GFGC_VERSION', '1.3.0' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -68,16 +68,8 @@ function gfgc_process_submission( $entry, $form ) {
             }
         }
 
-        // Normalise button rows from generic_map format.
-        $buttons = [];
-        foreach ( (array) rgar( $settings, 'buttons' ) as $row ) {
-            $label = trim( rgar( $row, 'key' ) );
-            $url   = trim( rgar( $row, 'value' ) );
-            if ( $label !== '' && $url !== '' ) {
-                $buttons[] = [ 'button_label' => $label, 'button_url' => $url ];
-            }
-        }
-        $settings['buttons'] = $buttons;
+        // Repeater field stores rows directly as {button_label, button_url} — pass through as-is.
+        $settings['buttons'] = is_array( rgar( $settings, 'buttons' ) ) ? rgar( $settings, 'buttons' ) : [];
 
         $webhook_url = trim( rgar( $settings, 'webhook_url' ) );
         $feed_name   = rgar( $settings, 'feed_name', 'Google Chat Notification' );

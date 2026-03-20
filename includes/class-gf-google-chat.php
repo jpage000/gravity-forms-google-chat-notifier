@@ -81,6 +81,14 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                         'tooltip'       => '<h6>Google Chat Webhook URL</h6>In your Google Chat Space or DM: ⚙️ → Apps & Integrations → Webhooks → Add webhook → copy the URL and paste it here.',
                         'placeholder'   => 'https://chat.googleapis.com/v1/spaces/...',
                     ],
+                    [
+                        'name'        => 'card_icon_url',
+                        'label'       => 'Card Icon URL',
+                        'type'        => 'text',
+                        'class'       => 'large',
+                        'tooltip'     => 'Optional. URL of an image to show in the card header (square PNG or SVG recommended, min 256×256px). Leave blank for the default icon.',
+                        'placeholder' => 'https://example.com/your-icon.png',
+                    ],
                 ],
             ],
 
@@ -126,15 +134,27 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                         ],
                     ],
                     [
-                        'name'         => 'buttons',
-                        'label'        => 'Custom Buttons',
-                        'type'         => 'generic_map',
-                        'tooltip'      => 'Add clickable link buttons to the card. Each row is one button. URLs support merge tags.',
-                        'key_field'    => [
-                            'placeholder' => 'Button Label (e.g. View CRM)',
-                        ],
-                        'value_field'  => [
-                            'placeholder' => 'URL (e.g. https://yourcrm.com/lead/{entry_id})',
+                        'name'   => 'buttons',
+                        'label'  => 'Custom Buttons',
+                        'type'   => 'repeater',
+                        'tooltip' => 'Add one row per button. Label is the button text; URL supports merge tags like {entry_id}.',
+                        'add_button_text'    => '+ Add Button',
+                        'remove_button_text' => '−',
+                        'fields' => [
+                            [
+                                'name'        => 'button_label',
+                                'label'       => 'Label',
+                                'type'        => 'text',
+                                'class'       => 'medium',
+                                'placeholder' => 'e.g. View CRM',
+                            ],
+                            [
+                                'name'        => 'button_url',
+                                'label'       => 'URL',
+                                'type'        => 'text',
+                                'class'       => 'large merge-tag-support mt-position-right mt-hide_all_fields',
+                                'placeholder' => 'https://yourcrm.com/lead/{entry_id}',
+                            ],
                         ],
                     ],
                 ],
@@ -164,6 +184,14 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             'feed_name'   => 'Name',
             'webhook_url' => 'Webhook URL',
         ];
+    }
+
+    /**
+     * Disable async/batch processing so GF calls process_feed() synchronously
+     * on manual feed reprocessing — avoids the "failed to create batch" error.
+     */
+    public function supports_async_feed_processing(): bool {
+        return false;
     }
 
     // -------------------------------------------------------------------------
