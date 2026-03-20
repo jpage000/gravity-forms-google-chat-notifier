@@ -82,7 +82,11 @@ function gfgc_process_submission( $entry, $form ) {
         // Build and send the card.
         $payload  = ( new GF_Google_Chat_Message( $form, $entry, $settings ) )->build();
         $json = wp_json_encode( $payload );
-        error_log( 'GFGC payload [' . $feed_name . ']: ' . $json );
+
+        // Debug: write to a guaranteed log file regardless of PHP error_log config.
+        $debug_line = date( 'Y-m-d H:i:s' ) . ' [' . $feed_name . '] settings=' . wp_json_encode( $settings ) . ' payload=' . $json . "\n";
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+        file_put_contents( WP_CONTENT_DIR . '/gfgc-debug.log', $debug_line, FILE_APPEND | LOCK_EX );
 
         $response = wp_remote_post( $webhook_url, [
             'headers'     => [ 'Content-Type' => 'application/json' ],
@@ -180,13 +184,6 @@ function gfgc_maybe_handle_resend() {
 
     $status = 'error';
     if ( ! is_wp_error( $entry ) && is_array( $form ) ) {
-        // Apply the same pre-render filters GF uses before gform_after_submission
-        // so that GFCommon::replace_variables() has the full form context it expects.
-        $form = apply_filters( 'gform_pre_render', $form, false, [] );
-        $form = apply_filters( 'gform_pre_process', $form );
-        $form = apply_filters( "gform_pre_process_{$form_id}", $form );
-
-        error_log( 'GFGC resend: entry_id=' . $entry_id . ' form_id=' . $form_id );
         gfgc_process_submission( $entry, $form );
         $status = 'sent';
     } else {
