@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.5.1';
+    protected $_version                  = '1.5.2';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -76,10 +76,11 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             return parent::settings_textarea( $field, $echo );
         }
 
-        // Get the currently saved value.
-        $value = $this->get_setting( 'message_body', '' );
+        // Decode HTML entities: the saved value is HTML-encoded (so GF's validator
+        // doesn't reject < and > characters). Decode before passing to wp_editor.
+        $raw   = $this->get_setting( 'message_body', '' );
+        $value = html_entity_decode( $raw, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 
-        // wp_editor() outputs HTML immediately; capture it.
         ob_start();
         wp_editor(
             $value,
@@ -96,6 +97,11 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                 ],
             ]
         );
+
+        // Hidden merge-tag-support input: GF attaches its merge tag picker to this.
+        // admin.js watches this input and forwards selected tags into TinyMCE.
+        echo '<input type="hidden" id="gfgc_mt_target" class="merge-tag-support mt-position-right mt-hide_all_fields" style="position:absolute;opacity:0;pointer-events:none;" />';
+
         $html = ob_get_clean();
 
         if ( $echo ) {
@@ -113,7 +119,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
         $scripts = [
             [
                 'handle'  => 'gfgc-admin',
-                'src'     => GFGC_PLUGIN_URL . 'assets/js/admin.js',
+                'src'     => GFGC_PLUGIN_URL . 'assets/js/gfgc-settings.js',
                 'version' => GFGC_VERSION,
                 'deps'    => [ 'jquery', 'media-upload', 'thickbox', 'editor' ],
                 'enqueue' => [

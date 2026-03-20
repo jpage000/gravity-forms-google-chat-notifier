@@ -42,9 +42,12 @@ class GF_Google_Chat_Message {
     public function build(): array {
         $title    = $this->merge( $this->settings['notification_title'] ?? 'New Form Submission' );
         // Subtitle: user-defined, supports merge tags, empty = hidden
-        $raw_sub  = $this->settings['notification_subtitle'] ?? 'Form: {form_title}  •  Entry #{entry_id}';
+        $raw_sub  = $this->settings['notification_subtitle'] ?? 'Form: {form_title} - Entry #{entry_id}';
         $subtitle = $this->merge( $raw_sub );
-        $body     = $this->merge( $this->settings['message_body'] ?? '' );
+        // Decode HTML entities before processing: the body is stored as HTML-encoded
+        // so GF's settings validator doesn't reject < and > when the user saves.
+        $raw_body = html_entity_decode( $this->settings['message_body'] ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+        $body     = $this->merge( $raw_body );
 
         // Build widget list.
         $widgets = [];
