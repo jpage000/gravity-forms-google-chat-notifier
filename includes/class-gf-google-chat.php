@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.4.8';
+    protected $_version                  = '1.5.0';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -68,6 +68,44 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     }
 
     /**
+     * Override textarea rendering — use WP Editor (TinyMCE) for the card body field
+     * so the user gets the same WYSIWYG experience as GF's email notification body.
+     */
+    public function settings_textarea( $field, $echo = true ) {
+        if ( rgar( $field, 'name' ) !== 'message_body' ) {
+            return parent::settings_textarea( $field, $echo );
+        }
+
+        // Get the currently saved value.
+        $value = $this->get_setting( 'message_body', '' );
+
+        // wp_editor() outputs HTML immediately; capture it.
+        ob_start();
+        wp_editor(
+            $value,
+            'gfgc_message_body',
+            [
+                'textarea_name' => '_gform_setting_message_body',
+                'textarea_rows' => 10,
+                'teeny'         => false,
+                'media_buttons' => false,
+                'quicktags'     => true,
+                'tinymce'       => [
+                    'toolbar1' => 'bold,italic,underline,strikethrough,forecolor,link,unlink,removeformat,|,bullist,numlist,|,undo,redo',
+                    'toolbar2' => '',
+                ],
+            ]
+        );
+        $html = ob_get_clean();
+
+        if ( $echo ) {
+            echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        }
+
+        return $html;
+    }
+
+    /**
      * Enqueue admin scripts for the feed settings page.
      * Adds the Media Library picker to the Card Icon URL field.
      */
@@ -77,7 +115,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                 'handle'  => 'gfgc-admin',
                 'src'     => GFGC_PLUGIN_URL . 'assets/js/admin.js',
                 'version' => GFGC_VERSION,
-                'deps'    => [ 'jquery', 'media-upload', 'thickbox' ],
+                'deps'    => [ 'jquery', 'media-upload', 'thickbox', 'editor' ],
                 'enqueue' => [
                     [ 'admin_page' => [ 'form_settings' ] ],
                 ],

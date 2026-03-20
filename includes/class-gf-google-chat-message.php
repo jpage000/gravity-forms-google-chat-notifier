@@ -49,31 +49,19 @@ class GF_Google_Chat_Message {
         // Build widget list.
         $widgets = [];
 
-        // Body paragraph — only add if non-empty.
-        // wp_kses() allows the subset of HTML that Google Chat Cards v2 supports
-        // in textParagraph: bold, italic, underline, strikethrough, colour, links.
+        // Body paragraph — build Chat-compatible HTML from TinyMCE or raw body.
         if ( $body !== '' ) {
-            // Convert markdown shortcuts to HTML that Google Chat accepts.
+            // 1. Convert any markdown shortcuts someone may have typed (**bold** etc.)
             $body = $this->markdown_to_html( $body );
-
-            $allowed_tags = [
-                'b'      => [],
-                'strong' => [],
-                'i'      => [],
-                'em'     => [],
-                'u'      => [],
-                's'      => [],
-                'del'    => [],
-                'strike' => [],
-                'font'   => [ 'color' => [] ],
-                'a'      => [ 'href' => [], 'target' => [] ],
-                'br'     => [],
-            ];
-            $widgets[] = [
-                'textParagraph' => [
-                    'text' => str_replace( [ "\r\n", "\r", "\n" ], '<br>', wp_kses( $body, $allowed_tags ) ),
-                ],
-            ];
+            // 2. Convert block-level HTML from TinyMCE to flat Chat-compatible markup.
+            $body = $this->html_to_chat( $body );
+            if ( $body !== '' ) {
+                $widgets[] = [
+                    'textParagraph' => [
+                        'text' => $body,
+                    ],
+                ];
+            }
         }
 
         // Collect buttons.
@@ -150,6 +138,62 @@ class GF_Google_Chat_Message {
         // Strikethrough: ~~text~~
         $text = preg_replace( '/~{2}(.+?)~{2}/s', '<s>$1</s>', $text );
         return $text;
+    }
+
+    /**
+     * Convert block-level HTML produced by TinyMCE into the flat, inline-only
+     * subset that Google Chat's textParagraph widget accepts.
+     *
+     * Google Chat supports: <b>, <i>, <u>, <s>, <font color="">, <a href="">, <br>
+     * It does NOT support: <p>, <div>, <ul>, <ol>, <li>, <h1>…<h6>, <span>, etc.
+     *
+     * @param  string $html Raw HTML (e.g. TinyMCE output or markdown-converted output).
+     * @return string Flat HTML safe for textParagraph.text.
+     */
+    private function html_to_chat( string $html ): string {
+        // Normalise line endings.
+        $html = str_replace( [ "\r\n", "\r" ], "\n", $html );
+
+        // Headings → bold + double line-break.
+        $html = preg_replace( '/<h[1-6][^>]*>(.*?)<\/h[1-6]>/is', '<b>$1</b><br><br>', $html );
+
+        // List items → bullet + single line-break (strip enclosing ul/ol later).
+        $html = preg_replace( '/<li[^>]*>(.*?)<\/li>/is', '• $1<br>', $html );
+
+        // Block paragraphs → content + double line-break.
+        $html = preg_replace( '/<p[^>]*>(.*?)<\/p>/is', '$1<br><br>', $html );
+
+        // Divs and other block wrappers → content + single line-break.
+        $html = preg_replace( '/<(?:div|blockquote|pre|section|article)[^>]*>(.*?)<\/(?:div|blockquote|pre|section|article)>/is', '$1<br>', $html );
+
+        // Map semantic tags to Chat equivalents.
+        $html = preg_replace( '/<strong[^>]*>(.*?)<\/strong>/is', '<b>$1</b>', $html );
+        $html = preg_replace( '/<em[^>]*>(.*?)<\/em>/is', '<i>$1</i>', $html );
+        $html = preg_replace( '/<del[^>]*>(.*?)<\/del>/is', '<s>$1</s>', $html );
+        $html = preg_replace( '/<strike[^>]*>(.*?)<\/strike>/is', '<s>$1</s>', $html );
+
+        // Normalise self-closing <br /> → <br>.
+        $html = preg_replace( '/<br\s*\/?>/i', '<br>', $html );
+
+        // Strip remaining unsupported tags but keep their inner text.
+        $allowed_tags = [
+            'b'    => [],
+            'i'    => [],
+            'u'    => [],
+            's'    => [],
+            'font' => [ 'color' => [] ],
+            'a'    => [ 'href' => [], 'target' => [] ],
+            'br'   => [],
+        ];
+        $html = wp_kses( $html, $allowed_tags );
+
+        // Collapse 3+ consecutive <br> into 2.
+        $html = preg_replace( '/(<br>\s*){3,}/i', '<br><br>', $html );
+
+        // Strip bare newline characters left over (already handled via <br>).
+        $html = str_replace( "\n", '', $html );
+
+        return trim( $html );
     }
 
     /**

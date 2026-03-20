@@ -1,14 +1,17 @@
 /**
  * Google Chat Notifier — Admin UI
- * Adds a WordPress Media Library picker to the Card Icon URL field.
- * Adds real-time URL validation to all URL fields.
+ *
+ * - WordPress Media Library picker for Card Icon URL field
+ * - Real-time URL validation for webhook + button URL fields
+ * - TinyMCE sync before GF's AJAX save (keeps WP Editor content)
  */
 ( function ( $ ) {
 	'use strict';
 
-	// ── Media Library picker for Card Icon URL ────────────────────────────────
 	$( document ).ready( function () {
-		var $input   = $( 'input[name="_gform_setting_card_icon_url"]' );
+
+		// ── Media Library picker for Card Icon URL ────────────────────────────
+		var $input = $( 'input[name="_gform_setting_card_icon_url"]' );
 		if ( $input.length ) {
 			var $btn     = $( '<button type="button" class="button" style="margin-left:6px;">📁 Select Image</button>' );
 			var $preview = $( '<span id="gfgc-icon-preview" style="display:inline-block;margin-left:10px;vertical-align:middle;"></span>' );
@@ -16,33 +19,29 @@
 			$input.after( $preview ).after( $btn );
 
 			function updatePreview( url ) {
-				if ( url ) {
-					$preview.html( '<img src="' + url + '" style="height:40px;width:40px;object-fit:cover;border-radius:50%;border:1px solid #ddd;" />' );
-				} else {
-					$preview.html( '' );
-				}
+				$preview.html( url ? '<img src="' + url + '" style="height:40px;width:40px;object-fit:cover;border-radius:50%;border:1px solid #ddd;" />' : '' );
 			}
 			updatePreview( $input.val() );
 			$input.on( 'input', function () { updatePreview( $( this ).val() ); } );
 
 			$btn.on( 'click', function ( e ) {
 				e.preventDefault();
-				var mediaUploader = wp.media( {
-					title   : 'Select Card Icon',
-					button  : { text: 'Use this image' },
+				var frame = wp.media( {
+					title  : 'Select Card Icon',
+					button : { text: 'Use this image' },
 					multiple: false,
 					library : { type: 'image' },
 				} );
-				mediaUploader.on( 'select', function () {
-					var attachment = mediaUploader.state().get( 'selection' ).first().toJSON();
+				frame.on( 'select', function () {
+					var attachment = frame.state().get( 'selection' ).first().toJSON();
 					$input.val( attachment.url ).trigger( 'input' );
 				} );
-				mediaUploader.open();
+				frame.open();
 			} );
 		}
 
 		// ── Real-time URL validation ──────────────────────────────────────────
-		// Targets webhook URL, card icon URL, and all 5 button URL fields.
+		// Shows a red border + warning if a URL field doesn't start with https://
 		var urlFieldSelectors = [
 			'input[name="_gform_setting_webhook_url"]',
 			'input[name="_gform_setting_card_icon_url"]',
@@ -78,35 +77,15 @@
 			validateUrl( $( this ) );
 		} );
 
-		// ── Formatting toolbar for Card Body ─────────────────────────────────
-		var $body = $( 'textarea[name="_gform_setting_message_body"]' );
-		if ( $body.length ) {
-			var toolbarHtml =
-				'<div class="gfgc-toolbar" style="display:flex;gap:4px;margin-bottom:4px;">' +
-				'<button type="button" class="button gfgc-fmt" data-open="**" data-close="**" title="Bold: **text**"><b>B</b></button>' +
-				'<button type="button" class="button gfgc-fmt" data-open="_" data-close="_" title="Italic: _text_"><i>I</i></button>' +
-				'<button type="button" class="button gfgc-fmt" data-open="__" data-close="__" title="Underline: __text__"><u>U</u></button>' +
-				'<button type="button" class="button gfgc-fmt" data-open="~~" data-close="~~" title="Strikethrough: ~~text~~"><s>S</s></button>' +
-				'<button type="button" class="button gfgc-fmt" data-open="[" data-close="](https://)" title="Link: [text](url)">🔗</button>' +
-				'</div>';
+		// ── Sync TinyMCE before GF saves the feed ────────────────────────────
+		// GF saves feed settings via AJAX. TinyMCE doesn't auto-sync to the
+		// underlying textarea on AJAX submissions, so we trigger it manually
+		// when the user clicks any GF save button.
+		$( document ).on( 'click', '[data-js="gform_save_feed"], .gform-settings-save-button, #gform-settings-save', function () {
+			if ( typeof tinyMCE !== 'undefined' ) {
+				tinyMCE.triggerSave();
+			}
+		} );
 
-			$body.before( toolbarHtml );
-
-			$( '.gfgc-fmt' ).on( 'click', function () {
-				var open  = $( this ).data( 'open' );
-				var close = $( this ).data( 'close' );
-				var el    = $body[0];
-				var start = el.selectionStart;
-				var end   = el.selectionEnd;
-				var sel   = el.value.substring( start, end ) || 'text';
-				var replacement = open + sel + close;
-				el.value = el.value.substring( 0, start ) + replacement + el.value.substring( end );
-				// Restore cursor inside the inserted markers.
-				var newStart = start + open.length;
-				var newEnd   = newStart + sel.length;
-				el.setSelectionRange( newStart, newEnd );
-				el.focus();
-			} );
-		}
 	} );
 } )( jQuery );
