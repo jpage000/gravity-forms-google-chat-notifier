@@ -83,15 +83,12 @@
 		if ( $body.length ) {
 			var toolbarHtml =
 				'<div class="gfgc-toolbar" style="display:flex;gap:4px;margin-bottom:4px;">' +
-				'<button type="button" class="button gfgc-fmt" data-open="**" data-close="**" title="Bold (**text**)"><b>B</b></button>' +
-				'<button type="button" class="button gfgc-fmt" data-open="_" data-close="_" title="Italic (_text_)"><i>I</i></button>' +
-				'<button type="button" class="button gfgc-fmt" data-open="__" data-close="__" title="Underline (__text__)"><u>U</u></button>' +
-				'<button type="button" class="button gfgc-fmt" data-open="~~" data-close="~~" title="Strikethrough (~~text~~)"><s>S</s></button>' +
-				'<button type="button" class="button gfgc-fmt" data-open="[" data-close="](https://)" title="Link ([text](url))">🔗</button>' +
-				'</div>' +
-				'<p style="font-size:11px;color:#666;margin:0 0 4px;">' +
-				'Formatting: <code>**bold**</code> &nbsp;|&nbsp; <code>_italic_</code> &nbsp;|&nbsp; <code>__underline__</code> &nbsp;|&nbsp; <code>~~strike~~</code>' +
-				'</p>';
+				'<button type="button" class="button gfgc-fmt" data-open="**" data-close="**" title="Bold: **text**"><b>B</b></button>' +
+				'<button type="button" class="button gfgc-fmt" data-open="_" data-close="_" title="Italic: _text_"><i>I</i></button>' +
+				'<button type="button" class="button gfgc-fmt" data-open="__" data-close="__" title="Underline: __text__"><u>U</u></button>' +
+				'<button type="button" class="button gfgc-fmt" data-open="~~" data-close="~~" title="Strikethrough: ~~text~~"><s>S</s></button>' +
+				'<button type="button" class="button gfgc-fmt" data-open="[" data-close="](https://)" title="Link: [text](url)">🔗</button>' +
+				'</div>';
 
 			$body.before( toolbarHtml );
 
