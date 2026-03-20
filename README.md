@@ -78,6 +78,9 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.3.5
+- **Fixed Feed Forge batch error** — removed custom constructor calling `parent::__construct()` (conflicted with GF's batch processor instantiation); replaced with `is_active()` override returning `true` and `init()` override for hooks
+
 ### 1.3.4
 - **Fixed Feed Forge / reprocessing** — added `gform_allow_feed_reprocessing` filter returning `true` for our feeds; GFFeedAddOn defaults this to `false` and silently skips `process_feed()` during all manual reprocessing (including Gravity Wiz Feed Forge)
 

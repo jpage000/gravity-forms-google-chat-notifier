@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.2.1';
+    protected $_version                  = '1.3.5';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -41,22 +41,27 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     }
 
     /**
-     * Constructor — set runtime-dependent properties before GF's parent
-     * constructor registers hooks.
+     * Always report ourselves as active so GF's batch processor doesn't skip
+     * us due to a wrong $_full_path-based is_plugin_active() check.
      */
-    public function __construct() {
-        $this->_full_path = GFGC_PLUGIN_FILE;
-        $this->_version   = GFGC_VERSION;
-        parent::__construct();
+    public function is_active(): bool {
+        return true;
+    }
 
-        // Allow Feed Forge and GF's native reprocessing to call process_feed().
-        // gform_allow_feed_reprocessing defaults to false, which silently skips
-        // our feed during any manual reprocess.
+    /**
+     * Hook into init() (called by parent after proper setup) rather than the
+     * constructor, so reprocessing filters are added at the right time.
+     */
+    public function init() {
+        parent::init();
+
+        // Allow Feed Forge and GF native reprocessing to invoke process_feed().
+        // gform_allow_feed_reprocessing defaults to false for all add-ons.
         add_filter( 'gform_allow_feed_reprocessing', [ $this, 'allow_feed_reprocessing' ], 10, 5 );
     }
 
     /**
-     * Allow reprocessing for our own feeds.
+     * Allow reprocessing for our own feeds only.
      */
     public function allow_feed_reprocessing( $allow, $feed, $entry, $form, $addon ) {
         return ( $addon instanceof self ) ? true : $allow;
