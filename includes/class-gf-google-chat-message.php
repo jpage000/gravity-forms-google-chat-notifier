@@ -144,9 +144,12 @@ class GF_Google_Chat_Message {
         }
 
         // Custom buttons from fixed slots 1–5.
+        // Validate each URL first — esc_url_raw() rejects invalid schemes (e.g. typos
+        // like "htps://"). A button with url="" causes Google Chat to reject the whole card.
         for ( $i = 1; $i <= 5; $i++ ) {
             $label = trim( rgar( $this->settings, "btn{$i}_label" ) );
-            $url   = trim( $this->merge( rgar( $this->settings, "btn{$i}_url" ) ) );
+            $raw   = trim( $this->merge( rgar( $this->settings, "btn{$i}_url" ) ) );
+            $url   = esc_url_raw( $raw );
             if ( $label !== '' && $url !== '' ) {
                 $buttons[] = $this->make_button( $label, $url );
             }
