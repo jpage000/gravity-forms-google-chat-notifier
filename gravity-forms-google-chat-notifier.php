@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      1.4.1
+ * Version:      1.4.2
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '1.4.1' );
+define( 'GFGC_VERSION', '1.4.2' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -81,9 +81,12 @@ function gfgc_process_submission( $entry, $form ) {
 
         // Build and send the card.
         $payload  = ( new GF_Google_Chat_Message( $form, $entry, $settings ) )->build();
+        $json = wp_json_encode( $payload );
+        error_log( 'GFGC payload [' . $feed_name . ']: ' . $json );
+
         $response = wp_remote_post( $webhook_url, [
             'headers'     => [ 'Content-Type' => 'application/json' ],
-            'body'        => wp_json_encode( $payload ),
+            'body'        => $json,
             'timeout'     => 15,
             'redirection' => 0,
             'data_format' => 'body',
@@ -177,8 +180,17 @@ function gfgc_maybe_handle_resend() {
 
     $status = 'error';
     if ( ! is_wp_error( $entry ) && is_array( $form ) ) {
+        // Apply the same pre-render filters GF uses before gform_after_submission
+        // so that GFCommon::replace_variables() has the full form context it expects.
+        $form = apply_filters( 'gform_pre_render', $form, false, [] );
+        $form = apply_filters( 'gform_pre_process', $form );
+        $form = apply_filters( "gform_pre_process_{$form_id}", $form );
+
+        error_log( 'GFGC resend: entry_id=' . $entry_id . ' form_id=' . $form_id );
         gfgc_process_submission( $entry, $form );
         $status = 'sent';
+    } else {
+        error_log( 'GFGC resend error: entry=' . print_r( $entry, true ) );
     }
 
     wp_safe_redirect(
