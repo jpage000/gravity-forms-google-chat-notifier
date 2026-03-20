@@ -50,6 +50,26 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
         parent::__construct();
     }
 
+    /**
+     * Enqueue admin scripts for the feed settings page.
+     * Adds the Media Library picker to the Card Icon URL field.
+     */
+    public function scripts(): array {
+        $scripts = [
+            [
+                'handle'  => 'gfgc-admin',
+                'src'     => GFGC_PLUGIN_URL . 'assets/js/admin.js',
+                'version' => GFGC_VERSION,
+                'deps'    => [ 'jquery', 'media-upload', 'thickbox' ],
+                'enqueue' => [
+                    [ 'admin_page' => [ 'form_settings' ] ],
+                ],
+            ],
+        ];
+
+        return array_merge( parent::scripts(), $scripts );
+    }
+
     // -------------------------------------------------------------------------
     // Feed settings fields
     // -------------------------------------------------------------------------

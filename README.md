@@ -78,6 +78,9 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Changelog
 
+### 1.3.1
+- **Media Library icon picker** — "Card Icon URL" field now has a "📁 Select Image" button that opens the WordPress Media Library, with a live circular thumbnail preview
+
 ### 1.3.0
 - **Custom icon per feed** — new "Card Icon URL" field in feed settings; leave blank to use the default icon
 - **Fixed buttons** — switched from `generic_map` to `repeater` field; `generic_map` was storing free-text entries under `custom_key`/`custom_value` instead of `key`/`value`, causing custom buttons to be ignored
