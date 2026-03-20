@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      1.4.3
+ * Version:      1.4.4
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '1.4.3' );
+define( 'GFGC_VERSION', '1.4.4' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -79,14 +79,28 @@ function gfgc_process_submission( $entry, $form ) {
             continue;
         }
 
+        // Pre-flight: check all button URLs before building the card.
+        // An invalid URL (e.g. "htps://") passes the empty-string check but causes
+        // esc_url_raw() to return "", which makes Google Chat reject the entire card.
+        $invalid_buttons = [];
+        for ( $i = 1; $i <= 5; $i++ ) {
+            $btn_label = trim( rgar( $settings, "btn{$i}_label" ) );
+            $btn_url   = trim( rgar( $settings, "btn{$i}_url" ) );
+            if ( $btn_label !== '' && $btn_url !== '' && esc_url_raw( $btn_url ) === '' ) {
+                $invalid_buttons[] = "Button {$i} \"{$btn_label}\": \"{$btn_url}\"";
+            }
+        }
+        if ( ! empty( $invalid_buttons ) ) {
+            gfgc_add_note( $entry_id, sprintf(
+                '⚠️ Google Chat Notifier [%s]: Invalid button URL(s) were skipped — please fix in feed settings: %s',
+                $feed_name,
+                implode( '; ', $invalid_buttons )
+            ) );
+        }
+
         // Build and send the card.
         $payload  = ( new GF_Google_Chat_Message( $form, $entry, $settings ) )->build();
-        $json = wp_json_encode( $payload );
-
-        // Debug: write to a guaranteed log file regardless of PHP error_log config.
-        $debug_line = date( 'Y-m-d H:i:s' ) . ' [' . $feed_name . '] settings=' . wp_json_encode( $settings ) . ' payload=' . $json . "\n";
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-        file_put_contents( WP_CONTENT_DIR . '/gfgc-debug.log', $debug_line, FILE_APPEND | LOCK_EX );
+        $json     = wp_json_encode( $payload );
 
         $response = wp_remote_post( $webhook_url, [
             'headers'     => [ 'Content-Type' => 'application/json' ],
