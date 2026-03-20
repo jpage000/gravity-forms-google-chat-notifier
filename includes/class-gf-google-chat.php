@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.4.7';
+    protected $_version                  = '1.4.8';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -143,13 +143,12 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                         'default_value' => 'New Form Submission — {form_title}',
                     ],
                     [
-                        'name'          => 'notification_subtitle',
-                        'label'         => 'Card Subtitle',
-                        'type'          => 'text',
-                        'class'         => 'large merge-tag-support mt-position-right mt-hide_all_fields',
-                        'tooltip'       => 'Shown below the title in the card header. Supports merge tags. Leave blank to hide the subtitle.',
-                        'placeholder'   => 'e.g. Form: {form_title}  •  Entry #{entry_id}',
-                        'default_value' => 'Form: {form_title}  •  Entry #{entry_id}',
+                        'name'        => 'notification_subtitle',
+                        'label'       => 'Card Subtitle',
+                        'type'        => 'textarea',
+                        'class'       => 'large merge-tag-support mt-position-right mt-hide_all_fields',
+                        'tooltip'     => 'Shown below the title in the card header. Supports merge tags. Leave blank to hide the subtitle.',
+                        'placeholder' => 'e.g. Form: {form_title} - Entry #{entry_id}',
                     ],
                     [
                         'name'    => 'message_body',
