@@ -41,12 +41,10 @@ class GF_Google_Chat_Message {
      */
     public function build(): array {
         $title    = $this->merge( $this->settings['notification_title'] ?? 'New Form Submission' );
-        $subtitle = sprintf(
-            'Form: %s  •  Entry #%d',
-            esc_html( rgar( $this->form, 'title' ) ),
-            absint( rgar( $this->entry, 'id' ) )
-        );
-        $body = $this->merge( $this->settings['message_body'] ?? '' );
+        // Subtitle: user-defined, supports merge tags, empty = hidden
+        $raw_sub  = $this->settings['notification_subtitle'] ?? 'Form: {form_title}  •  Entry #{entry_id}';
+        $subtitle = $this->merge( $raw_sub );
+        $body     = $this->merge( $this->settings['message_body'] ?? '' );
 
         // Build widget list.
         $widgets = [];
