@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.6.0';
+    protected $_version                  = '1.6.1';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -29,17 +29,16 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     private static $_instance = null;
 
     /**
-     * Google Chat icon — teal speech-bubble with three dots — used in the
-     * GF form-settings navigation tab and WP admin menu.
+     * Google Chat icon — teal speech-bubble with three dots.
+     * GF form-settings nav needs a raw SVG string (not base64).
      */
     public function get_menu_icon(): string {
-        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
              . '<path fill="#00BCD4" d="M40 6H8C5.8 6 4 7.8 4 10v24c0 2.2 1.8 4 4 4h8v6l7-6h17c2.2 0 4-1.8 4-4V10c0-2.2-1.8-4-4-4z"/>'
              . '<circle fill="#fff" cx="16" cy="22" r="3"/>'
              . '<circle fill="#fff" cx="24" cy="22" r="3"/>'
              . '<circle fill="#fff" cx="32" cy="22" r="3"/>'
              . '</svg>';
-        return 'data:image/svg+xml;base64,' . base64_encode( $svg );
     }
 
     /**
