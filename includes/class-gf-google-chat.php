@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '2.0.0';
+    protected $_version                  = '2.0.1';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -298,8 +298,8 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             [
                 'title'       => 'Buttons',
                 'description' => 'Add clickable link buttons to the card.',
-                'fields'      => array_merge(
-                    [
+                'fields'      => self::is_pro()
+                    ? [
                         [
                             'name'    => 'include_entry_link',
                             'label'   => 'View Entry Button',
@@ -313,28 +313,24 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                                 ],
                             ],
                         ],
+                        [ 'name' => 'btn1_label', 'label' => 'Button 1 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. View CRM' ],
+                        [ 'name' => 'btn1_url',   'label' => 'Button 1 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://yourcrm.com/lead/{entry_id}' ],
+                        [ 'name' => 'btn2_label', 'label' => 'Button 2 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. Open Policy' ],
+                        [ 'name' => 'btn2_url',   'label' => 'Button 2 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
+                        [ 'name' => 'btn3_label', 'label' => 'Button 3 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. Run Quote' ],
+                        [ 'name' => 'btn3_url',   'label' => 'Button 3 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
+                        [ 'name' => 'btn4_label', 'label' => 'Button 4 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => '' ],
+                        [ 'name' => 'btn4_url',   'label' => 'Button 4 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
+                        [ 'name' => 'btn5_label', 'label' => 'Button 5 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => '' ],
+                        [ 'name' => 'btn5_url',   'label' => 'Button 5 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
+                    ]
+                    : [
+                        [
+                            'name' => 'pro_buttons_notice',
+                            'type' => 'html',
+                            'html' => $this->pro_notice( 'Buttons (View Entry, custom links — up to 6 per card)' ),
+                        ],
                     ],
-                    self::is_pro()
-                        ? [
-                            [ 'name' => 'btn1_label', 'label' => 'Button 1 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. View CRM' ],
-                            [ 'name' => 'btn1_url',   'label' => 'Button 1 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://yourcrm.com/lead/{entry_id}' ],
-                            [ 'name' => 'btn2_label', 'label' => 'Button 2 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. Open Policy' ],
-                            [ 'name' => 'btn2_url',   'label' => 'Button 2 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
-                            [ 'name' => 'btn3_label', 'label' => 'Button 3 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. Run Quote' ],
-                            [ 'name' => 'btn3_url',   'label' => 'Button 3 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
-                            [ 'name' => 'btn4_label', 'label' => 'Button 4 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => '' ],
-                            [ 'name' => 'btn4_url',   'label' => 'Button 4 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
-                            [ 'name' => 'btn5_label', 'label' => 'Button 5 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => '' ],
-                            [ 'name' => 'btn5_url',   'label' => 'Button 5 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
-                        ]
-                        : [
-                            [
-                                'name' => 'pro_buttons_notice',
-                                'type' => 'html',
-                                'html' => $this->pro_notice( 'Custom Buttons (up to 5 per card)' ),
-                            ],
-                        ]
-                ),
             ],
 
             // ── Section 4: Conditional Logic ─────────────────────────────
