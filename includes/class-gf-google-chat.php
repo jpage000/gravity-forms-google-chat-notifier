@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.6.3';
+    protected $_version                  = '2.0.0';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -75,6 +75,13 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     }
 
     /**
+     * Returns true when the Pro plugin is active and licensed.
+     */
+    public static function is_pro(): bool {
+        return (bool) apply_filters( 'gfgc_is_pro_active', false );
+    }
+
+    /**
      * Allow reprocessing for our own feeds only.
      */
     public function allow_feed_reprocessing( $allow, $feed, $entry, $form, $addon ) {
@@ -87,6 +94,12 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
      */
     public function settings_textarea( $field, $echo = true ) {
         if ( rgar( $field, 'name' ) !== 'message_body' ) {
+            return parent::settings_textarea( $field, $echo );
+        }
+
+        // Free users get a standard merge-tag-aware textarea.
+        // Pro users get the full WP Editor with the {Merge Tags} toolbar button.
+        if ( ! self::is_pro() ) {
             return parent::settings_textarea( $field, $echo );
         }
 
@@ -240,7 +253,8 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                     [
                         'name'        => 'card_icon_url',
                         'label'       => 'Card Icon URL',
-                        'type'        => 'text',
+                        'type'        => self::is_pro() ? 'text' : 'html',
+                        'html'        => self::is_pro() ? '' : $this->pro_notice( 'Card Icon' ),
                         'class'       => 'large',
                         'tooltip'     => 'Optional. URL of an image to show in the card header (square PNG or SVG recommended, min 256×256px). Leave blank for the default icon.',
                         'placeholder' => 'https://example.com/your-icon.png',
@@ -283,93 +297,44 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             // ── Section 3: Buttons ────────────────────────────────────────
             [
                 'title'       => 'Buttons',
-                'description' => 'Add up to 5 custom link buttons to the card. Leave a row blank to skip it. URLs support merge tags like <code>{entry_id}</code>.',
-                'fields'      => [
+                'description' => 'Add clickable link buttons to the card.',
+                'fields'      => array_merge(
                     [
-                        'name'    => 'include_entry_link',
-                        'label'   => 'View Entry Button',
-                        'type'    => 'checkbox',
-                        'tooltip' => 'Automatically add a "📋 View Entry" button that links to the entry in WP Admin.',
-                        'choices' => [
-                            [
-                                'name'          => 'include_entry_link',
-                                'label'         => 'Include a "View Entry" admin button',
-                                'default_value' => '0',
+                        [
+                            'name'    => 'include_entry_link',
+                            'label'   => 'View Entry Button',
+                            'type'    => 'checkbox',
+                            'tooltip' => 'Automatically add a "📋 View Entry" button that links to the entry in WP Admin.',
+                            'choices' => [
+                                [
+                                    'name'          => 'include_entry_link',
+                                    'label'         => 'Include a "View Entry" admin button',
+                                    'default_value' => '0',
+                                ],
                             ],
                         ],
                     ],
-                    // ── Button slots 1–5 ──────────────────────────────────
-                    [
-                        'name'  => 'btn1_label',
-                        'label' => 'Button 1 — Label',
-                        'type'  => 'text',
-                        'class' => 'medium',
-                        'placeholder' => 'e.g. View CRM',
-                    ],
-                    [
-                        'name'  => 'btn1_url',
-                        'label' => 'Button 1 — URL',
-                        'type'  => 'text',
-                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
-                        'placeholder' => 'https://yourcrm.com/lead/{entry_id}',
-                    ],
-                    [
-                        'name'  => 'btn2_label',
-                        'label' => 'Button 2 — Label',
-                        'type'  => 'text',
-                        'class' => 'medium',
-                        'placeholder' => 'e.g. Open Policy',
-                    ],
-                    [
-                        'name'  => 'btn2_url',
-                        'label' => 'Button 2 — URL',
-                        'type'  => 'text',
-                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
-                        'placeholder' => 'https://...',
-                    ],
-                    [
-                        'name'  => 'btn3_label',
-                        'label' => 'Button 3 — Label',
-                        'type'  => 'text',
-                        'class' => 'medium',
-                        'placeholder' => 'e.g. Run Quote',
-                    ],
-                    [
-                        'name'  => 'btn3_url',
-                        'label' => 'Button 3 — URL',
-                        'type'  => 'text',
-                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
-                        'placeholder' => 'https://...',
-                    ],
-                    [
-                        'name'  => 'btn4_label',
-                        'label' => 'Button 4 — Label',
-                        'type'  => 'text',
-                        'class' => 'medium',
-                        'placeholder' => '',
-                    ],
-                    [
-                        'name'  => 'btn4_url',
-                        'label' => 'Button 4 — URL',
-                        'type'  => 'text',
-                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
-                        'placeholder' => 'https://...',
-                    ],
-                    [
-                        'name'  => 'btn5_label',
-                        'label' => 'Button 5 — Label',
-                        'type'  => 'text',
-                        'class' => 'medium',
-                        'placeholder' => '',
-                    ],
-                    [
-                        'name'  => 'btn5_url',
-                        'label' => 'Button 5 — URL',
-                        'type'  => 'text',
-                        'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields',
-                        'placeholder' => 'https://...',
-                    ],
-                ],
+                    self::is_pro()
+                        ? [
+                            [ 'name' => 'btn1_label', 'label' => 'Button 1 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. View CRM' ],
+                            [ 'name' => 'btn1_url',   'label' => 'Button 1 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://yourcrm.com/lead/{entry_id}' ],
+                            [ 'name' => 'btn2_label', 'label' => 'Button 2 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. Open Policy' ],
+                            [ 'name' => 'btn2_url',   'label' => 'Button 2 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
+                            [ 'name' => 'btn3_label', 'label' => 'Button 3 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => 'e.g. Run Quote' ],
+                            [ 'name' => 'btn3_url',   'label' => 'Button 3 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
+                            [ 'name' => 'btn4_label', 'label' => 'Button 4 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => '' ],
+                            [ 'name' => 'btn4_url',   'label' => 'Button 4 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
+                            [ 'name' => 'btn5_label', 'label' => 'Button 5 — Label', 'type' => 'text', 'class' => 'medium', 'placeholder' => '' ],
+                            [ 'name' => 'btn5_url',   'label' => 'Button 5 — URL',   'type' => 'text', 'class' => 'large merge-tag-support mt-position-right mt-hide_all_fields', 'placeholder' => 'https://...' ],
+                        ]
+                        : [
+                            [
+                                'name' => 'pro_buttons_notice',
+                                'type' => 'html',
+                                'html' => $this->pro_notice( 'Custom Buttons (up to 5 per card)' ),
+                            ],
+                        ]
+                ),
             ],
 
             // ── Section 4: Conditional Logic ─────────────────────────────
@@ -506,5 +471,18 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             }
         }
         return $out;
+    }
+
+    /**
+     * Returns a "Pro feature" upgrade notice HTML string shown in feed settings.
+     */
+    private function pro_notice( string $feature ): string {
+        return sprintf(
+            '<p style="margin:4px 0;padding:8px 12px;background:#f9f9f9;border-left:4px solid #e2c000;border-radius:2px;">'
+            . '🔒 <strong>%s</strong> is a <strong>Pro</strong> feature. '
+            . '<a href="https://goat-getter.com/gf-google-chat-pro" target="_blank" rel="noopener">Upgrade to Pro →</a>'
+            . '</p>',
+            esc_html( $feature )
+        );
     }
 }

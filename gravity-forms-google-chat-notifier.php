@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      1.6.3
+ * Version:      2.0.0
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '1.6.3' );
+define( 'GFGC_VERSION', '2.0.0' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -51,10 +51,20 @@ function gfgc_process_submission( $entry, $form ) {
         return;
     }
 
+    // Free plan: only process the first active feed per form.
+    // Pro: process all active feeds (route to multiple spaces, conditional logic, etc.).
+    $processed_count = 0;
+    $is_pro          = apply_filters( 'gfgc_is_pro_active', false );
+
     foreach ( $feeds as $feed ) {
         // Skip inactive feeds.
         if ( ! rgar( $feed, 'is_active' ) ) {
             continue;
+        }
+
+        // Free limit: stop after the first active feed.
+        if ( ! $is_pro && $processed_count >= 1 ) {
+            break;
         }
 
         $settings = rgar( $feed, 'meta' );
@@ -138,6 +148,7 @@ function gfgc_process_submission( $entry, $form ) {
                 gfgc_add_note( $entry_id, sprintf( '❌ Google Chat Notifier [%s]: HTTP %d — %s', $feed_name, $code, wp_remote_retrieve_body( $response ) ) );
             }
         }
+        $processed_count++;
     }
 }
 
