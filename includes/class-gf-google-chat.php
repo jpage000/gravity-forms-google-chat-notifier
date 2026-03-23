@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.6.1';
+    protected $_version                  = '1.6.2';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -111,6 +111,9 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                 'tinymce'       => [
                     'toolbar1' => 'bold,italic,underline,strikethrough,forecolor,link,unlink,removeformat,|,bullist,numlist,|,undo,redo,|,gfmergetag',
                     'toolbar2' => '',
+                    // WordPress passes strings starting with 'function' as raw JS (not JSON-quoted).
+                    // This setup callback runs BEFORE the toolbar renders, so gfmergetag is registered in time.
+                    'setup'    => 'function(editor){ if(typeof window.gfgcSetupEditor==="function") window.gfgcSetupEditor(editor); }',
                 ],
             ]
         );
