@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.5.3';
+    protected $_version                  = '1.5.4';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -108,13 +108,11 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             esc_textarea( $raw_encoded )
         );
 
-        // Merge tag helper: GF attaches its {:-} picker button to visible inputs with
-        // merge-tag-support class. JS watches this input and forwards the selected tag
-        // into TinyMCE, then clears it.
-        echo '<div style="margin-top:6px;display:flex;align-items:center;gap:6px;">';
-        echo '<span style="font-size:12px;color:#666;">Insert merge tag:</span>';
-        echo '<input type="text" id="gfgc_mt_target" class="merge-tag-support mt-hide_all_fields" style="width:220px;font-size:12px;" placeholder="Click {:-} to pick a field" readonly />';
-        echo '</div>';
+        // Merge tag helper: same convention as title/subtitle — GF attaches the {:-}
+        // picker button to inputs with merge-tag-support + mt-position-right.
+        // NOT readonly so GF can write the selected tag to it.
+        // Visually hidden (not display:none, so GF still renders the button).
+        echo '<input type="text" id="gfgc_mt_target" class="merge-tag-support mt-position-right mt-hide_all_fields" style="position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;" tabindex="-1" aria-hidden="true" />';
 
         $html = ob_get_clean();
 
