@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.5.9';
+    protected $_version                  = '1.6.0';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -110,7 +110,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
                 'media_buttons' => false,
                 'quicktags'     => true,
                 'tinymce'       => [
-                    'toolbar1' => 'bold,italic,underline,strikethrough,forecolor,link,unlink,removeformat,|,bullist,numlist,|,undo,redo',
+                    'toolbar1' => 'bold,italic,underline,strikethrough,forecolor,link,unlink,removeformat,|,bullist,numlist,|,undo,redo,|,gfmergetag',
                     'toolbar2' => '',
                 ],
             ]
@@ -123,12 +123,8 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             esc_textarea( $raw_encoded )
         );
 
-        // Real textarea with merge-tag-support + mt-position-right.
-        // GF's JS uses DOM traversal (not visual position) to find the parent field
-        // container, so position:absolute still anchors the {:-} button to the
-        // Card Body label row — same as Title and Subtitle.
-        // GF writes the selected merge tag here; JS polls and forwards to TinyMCE.
-        echo '<textarea id="gfgc_mt_anchor" name="gfgc_mt_anchor" class="merge-tag-support mt-position-right mt-hide_all_fields" style="position:absolute;opacity:0;height:1px;min-height:1px;width:1px;border:0;padding:0;resize:none;overflow:hidden;" tabindex="-1"></textarea>';
+        // Real textarea with merge-tag-support NOT needed — merge tags are handled
+        // by the gfmergetag TinyMCE toolbar button registered in gfgc-settings.js.
 
         $html = ob_get_clean();
 
@@ -164,11 +160,47 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
      * Hooked on admin_enqueue_scripts — runs after our script is registered.
      */
     public function localize_settings_js(): void {
-        $form_id = absint( rgget( 'id' ) );
+        $form_id   = absint( rgget( 'id' ) );
+        $form      = $form_id ? GFAPI::get_form( $form_id ) : [];
+        $mt_groups = [];
+
+        // Build a simple flat list of merge tags for the TinyMCE menu button.
+        if ( ! empty( $form['fields'] ) ) {
+            foreach ( $form['fields'] as $field ) {
+                $label = GFCommon::get_label( $field );
+                if ( empty( $label ) ) {
+                    continue;
+                }
+                // Multi-input fields (Name, Address) get individual sub-tags.
+                $inputs = is_array( $field->inputs ) ? $field->inputs : [];
+                if ( ! empty( $inputs ) ) {
+                    foreach ( $inputs as $input ) {
+                        if ( ! empty( $input['isHidden'] ) ) continue;
+                        $sub_label = GFCommon::get_label( $field, $input['id'] );
+                        $mt_groups[] = [
+                            'text'  => $label . ' (' . $sub_label . ')',
+                            'value' => '{' . $label . ':' . $input['id'] . '}',
+                        ];
+                    }
+                } else {
+                    $mt_groups[] = [
+                        'text'  => $label,
+                        'value' => '{' . $label . ':' . $field->id . '}',
+                    ];
+                }
+            }
+            // Standard GF special tags.
+            $mt_groups[] = [ 'text' => '— Special —', 'value' => '' ];
+            $mt_groups[] = [ 'text' => 'Entry ID',     'value' => '{entry_id}' ];
+            $mt_groups[] = [ 'text' => 'Form Title',   'value' => '{form_title}' ];
+            $mt_groups[] = [ 'text' => 'Entry Date',   'value' => '{date_mdy}' ];
+        }
+
         wp_localize_script( 'gfgc-admin', 'gfgc_settings', [
-            'admin_url' => admin_url(),
-            'form_id'   => $form_id,
-            'dup_nonce' => wp_create_nonce( 'gfgc_duplicate_feed' ),
+            'admin_url'   => admin_url(),
+            'form_id'     => $form_id,
+            'dup_nonce'   => wp_create_nonce( 'gfgc_duplicate_feed' ),
+            'merge_tags'  => $mt_groups,
         ] );
     }
 

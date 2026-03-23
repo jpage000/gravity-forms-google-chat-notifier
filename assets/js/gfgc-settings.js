@@ -5,7 +5,7 @@
  * - Media Library picker for Card Icon URL
  * - Real-time URL validation
  * - Live HTML encoding for TinyMCE body (so GF validator never sees < >)
- * - Merge tag forwarding: gfgc_mt_anchor → TinyMCE
+ * - gfmergetag TinyMCE toolbar button (populated from gfgc_settings.merge_tags)
  * - Duplicate feed link injection in feed list
  */
 ( function ( $ ) {
@@ -78,7 +78,6 @@
 		$( document ).on( 'blur change', urlFieldSelectors, function () { validateUrl( $( this ) ); } );
 
 		// ── TinyMCE live encoding ─────────────────────────────────────────────
-		// Encodes HTML entities in real-time so GF's validator never sees < >.
 		function encodeForGf( str ) {
 			return str.replace( /&/g, '&amp;' ).replace( /</g, '&lt;' ).replace( />/g, '&gt;' );
 		}
@@ -91,73 +90,110 @@
 			}
 		}
 
+		// ── gfmergetag TinyMCE toolbar button ─────────────────────────────────
+		// Registered when the editor is first created. Populates a dropdown
+		// from gfgc_settings.merge_tags (localized by PHP) so the user can
+		// insert {Field:id} tags at cursor position without leaving the editor.
 		if ( typeof tinyMCE !== 'undefined' ) {
 			tinyMCE.on( 'AddEditor', function ( e ) {
-				if ( e.editor.id === 'gfgc_message_body' ) {
-					e.editor.on( 'change input NodeChange keyup', function () {
-						syncEditorToHidden();
-					} );
-				}
+				if ( e.editor.id !== 'gfgc_message_body' ) return;
+				var editor = e.editor;
+
+				// Live-encode on every content change.
+				editor.on( 'change input NodeChange keyup', function () {
+					syncEditorToHidden();
+				} );
+
+				// Register custom merge-tag menu button.
+				var mergeTags = ( typeof gfgc_settings !== 'undefined' && gfgc_settings.merge_tags )
+					? gfgc_settings.merge_tags
+					: [];
+
+				var menuItems = [];
+				mergeTags.forEach( function ( tag ) {
+					if ( ! tag.value ) {
+						// Separator / group header — use disabled item as visual divider.
+						menuItems.push( {
+							text    : tag.text,
+							disabled: true,
+						} );
+					} else {
+						menuItems.push( {
+							text   : tag.text,
+							value  : tag.value,
+							onclick: function () {
+								editor.insertContent( this.settings.value );
+								syncEditorToHidden();
+							},
+						} );
+					}
+				} );
+
+				editor.addButton( 'gfmergetag', {
+					type   : 'menubutton',
+					text   : '{: }',
+					icon   : false,
+					tooltip: 'Insert Merge Tag',
+					menu   : menuItems,
+				} );
 			} );
 		}
 
-		// Safety net: sync on save click too.
+		// Safety net: sync on save click.
 		$( document ).on( 'click', '[data-js="gform_save_feed"], .gform-settings-save-button, #gform-settings-save', function () {
 			syncEditorToHidden();
 		} );
 
-		// ── Merge tag forwarding: gfgc_mt_anchor → TinyMCE ───────────────────
-		// GF places the {:-} button next to #gfgc_mt_anchor (a positioned textarea
-		// inside the Card Body field wrapper). When the user picks a tag, GF writes
-		// it to that textarea. We poll and forward it to TinyMCE.
-		var $mtAnchor = $( '#gfgc_mt_anchor' );
-		var lastMt    = '';
-		if ( $mtAnchor.length ) {
-			setInterval( function () {
-				var val = $mtAnchor.val();
-				if ( val && val !== lastMt ) {
-					lastMt = val;
-					var editor = typeof tinyMCE !== 'undefined' ? tinyMCE.get( 'gfgc_message_body' ) : null;
-					if ( editor ) {
-						editor.insertContent( val );
-						syncEditorToHidden();
-					}
-					$mtAnchor.val( '' );
-					lastMt = '';
-				}
-			}, 150 );
-		}
-
 		// ── Duplicate feed links ──────────────────────────────────────────────
+		// GF doesn't natively support duplicating feeds. We inject a "Duplicate"
+		// link into each feed row. Try multiple selectors to cover different GF versions.
 		if ( typeof gfgc_settings !== 'undefined' && gfgc_settings.dup_nonce ) {
-			$( 'table.gform-settings-feed-list tbody tr, .gf-form-action-links tr' ).each( function () {
-				var $row = $( this );
-				// Find the edit/settings link that contains fid= in its href.
-				var $editLink = $row.find( 'a[href*="fid="]' ).first();
-				if ( ! $editLink.length ) return;
 
-				var href      = $editLink.attr( 'href' );
-				var fidMatch  = href.match( /[?&]fid=(\d+)/ );
-				var formMatch = href.match( /[?&]id=(\d+)/ );
-				if ( ! fidMatch ) return;
+			function injectDuplicateLinks( $rows ) {
+				$rows.each( function () {
+					var $row = $( this );
+					if ( $row.data( 'gfgc-dup-injected' ) ) return;
+					$row.data( 'gfgc-dup-injected', true );
 
-				var feedId = fidMatch[1];
-				var formId = formMatch ? formMatch[1] : gfgc_settings.form_id;
+					var $editLink = $row.find( 'a[href*="fid="]' ).first();
+					if ( ! $editLink.length ) return;
 
-				var dupUrl = gfgc_settings.admin_url +
-					'admin.php?page=gf_edit_forms&view=settings&subview=gf-google-chat&id=' + formId +
-					'&gfgc_action=duplicate_feed&fid=' + feedId +
-					'&form_id=' + formId +
-					'&_wpnonce=' + gfgc_settings.dup_nonce;
+					var href     = $editLink.attr( 'href' );
+					var fidMatch = href.match( /[?&]fid=(\d+)/ );
+					if ( ! fidMatch ) return;
 
-				// Append after the last link in the row's action cell.
-				var $actionArea = $editLink.closest( 'td' ).find( '.row-actions' );
-				if ( $actionArea.length ) {
-					$actionArea.append( ' | <a href="' + dupUrl + '">Duplicate</a>' );
-				} else {
-					$editLink.after( ' | <a href="' + dupUrl + '">Duplicate</a>' );
-				}
-			} );
+					var feedId = fidMatch[1];
+					var formId = gfgc_settings.form_id || ( href.match( /[?&]id=(\d+)/ ) || [] )[1] || '';
+
+					var dupUrl = gfgc_settings.admin_url +
+						'admin.php?page=gf_edit_forms&view=settings&subview=gf-google-chat&id=' + formId +
+						'&gfgc_action=duplicate_feed&fid=' + feedId +
+						'&form_id=' + formId +
+						'&_wpnonce=' + gfgc_settings.dup_nonce;
+
+					var $dupLink = $( '<a href="' + dupUrl + '" style="margin-left:8px;">Duplicate</a>' );
+
+					// Try inserting into row-actions area; fall back to after edit link.
+					var $rowActions = $row.find( '.row-actions' );
+					if ( $rowActions.length ) {
+						$rowActions.append( $( '<span> | </span>' ) ).append( $dupLink );
+					} else {
+						$editLink.closest( 'td, .gform-settings-field' ).append(
+							$( '<span style="margin-left:8px;"> | </span>' )
+						).append( $dupLink );
+					}
+				} );
+			}
+
+			// Try immediately, then after a short delay for React-rendered tables.
+			function tryInjectLinks() {
+				injectDuplicateLinks( $( 'tr' ).filter( function () {
+					return $( this ).find( 'a[href*="fid="]' ).length > 0;
+				} ) );
+			}
+
+			tryInjectLinks();
+			setTimeout( tryInjectLinks, 800 );
 		}
 
 	} );
