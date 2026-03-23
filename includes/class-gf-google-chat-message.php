@@ -193,8 +193,8 @@ class GF_Google_Chat_Message {
         // Collapse 3+ consecutive <br> into 2.
         $html = preg_replace( '/(<br>\s*){3,}/i', '<br><br>', $html );
 
-        // Strip bare newline characters left over (already handled via <br>).
-        $html = str_replace( "\n", '', $html );
+        // Convert any remaining bare newlines to <br> instead of stripping them.
+        $html = str_replace( "\n", '<br>', $html );
 
         return trim( $html );
     }

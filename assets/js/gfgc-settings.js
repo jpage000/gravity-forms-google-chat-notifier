@@ -1,9 +1,10 @@
 /**
  * Google Chat Notifier — Admin UI (gfgc-settings.js)
  *
- * - WordPress Media Library picker for Card Icon URL field
- * - Real-time URL validation for webhook + button URL fields
- * - TinyMCE sync + HTML encoding before GF's AJAX save
+ * - Subtitle textarea → single-line appearance
+ * - Media Library picker for Card Icon URL
+ * - Real-time URL validation
+ * - Live HTML encoding into GF's hidden textarea (so GF's validator never sees < >)
  * - Merge tag forwarding from GF's picker into TinyMCE
  */
 ( function ( $ ) {
@@ -34,8 +35,8 @@
 			$btn.on( 'click', function ( e ) {
 				e.preventDefault();
 				var frame = wp.media( {
-					title  : 'Select Card Icon',
-					button : { text: 'Use this image' },
+					title   : 'Select Card Icon',
+					button  : { text: 'Use this image' },
 					multiple: false,
 					library : { type: 'image' },
 				} );
@@ -75,44 +76,58 @@
 		}
 		$( document ).on( 'blur change', urlFieldSelectors, function () { validateUrl( $( this ) ); } );
 
-		// ── TinyMCE save: encode HTML entities before GF's AJAX save ─────────
-		// GF's settings validator rejects < and > in field values.
-		// We encode them to &lt; / &gt; here, then decode in PHP when building card.
-		function encodeHtmlEntities( str ) {
+		// ── TinyMCE live encoding ─────────────────────────────────────────────
+		// GF's settings validator rejects < and > in textarea values.
+		// We encode TinyMCE's HTML immediately whenever content changes,
+		// writing to a hidden textarea (#gfgc_body_encoded) that GF reads.
+		function encodeForGf( str ) {
 			return str
 				.replace( /&/g, '&amp;' )
 				.replace( /</g, '&lt;' )
 				.replace( />/g, '&gt;' );
 		}
 
+		function syncEditorToHidden() {
+			var editor = typeof tinyMCE !== 'undefined' ? tinyMCE.get( 'gfgc_message_body' ) : null;
+			var $hidden = $( '#gfgc_body_encoded' );
+			if ( editor && $hidden.length ) {
+				$hidden.val( encodeForGf( editor.getContent() ) );
+			}
+		}
+
+		// Bind as soon as TinyMCE editor is ready.
+		if ( typeof tinyMCE !== 'undefined' ) {
+			tinyMCE.on( 'AddEditor', function ( e ) {
+				if ( e.editor.id === 'gfgc_message_body' ) {
+					e.editor.on( 'change input NodeChange keyup', function () {
+						syncEditorToHidden();
+					} );
+				}
+			} );
+		}
+
+		// Also sync on save button click as a safety net.
 		$( document ).on( 'click', '[data-js="gform_save_feed"], .gform-settings-save-button, #gform-settings-save', function () {
-			// 1. Sync TinyMCE to its underlying textarea.
-			if ( typeof tinyMCE !== 'undefined' ) {
-				tinyMCE.triggerSave();
-			}
-			// 2. Encode the HTML so GF's validator doesn't reject angle brackets.
-			var $ta = $( 'textarea[name="_gform_setting_message_body"]' );
-			if ( $ta.length ) {
-				$ta.val( encodeHtmlEntities( $ta.val() ) );
-			}
+			syncEditorToHidden();
 		} );
 
 		// ── Merge tag forwarding: GF picker → TinyMCE ────────────────────────
-		// GF attaches its merge tag picker to #gfgc_mt_target (a hidden input we add
-		// in PHP). We poll it and forward selected tags into the TinyMCE editor.
-		var $mtTarget  = $( '#gfgc_mt_target' );
-		var lastMtVal  = '';
+		// GF's picker inserts into #gfgc_mt_target. We poll for changes and
+		// forward the selected tag directly into TinyMCE, then clear the helper.
+		var $mtTarget = $( '#gfgc_mt_target' );
+		var lastMt    = '';
 		if ( $mtTarget.length ) {
 			setInterval( function () {
 				var val = $mtTarget.val();
-				if ( val && val !== lastMtVal ) {
-					lastMtVal = val;
+				if ( val && val !== lastMt ) {
+					lastMt = val;
 					var editor = typeof tinyMCE !== 'undefined' ? tinyMCE.get( 'gfgc_message_body' ) : null;
 					if ( editor ) {
 						editor.insertContent( val );
+						syncEditorToHidden();
 					}
 					$mtTarget.val( '' );
-					lastMtVal = '';
+					lastMt = '';
 				}
 			}, 150 );
 		}

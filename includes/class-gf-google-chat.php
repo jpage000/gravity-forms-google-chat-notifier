@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.5.2';
+    protected $_version                  = '1.5.3';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -76,17 +76,20 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             return parent::settings_textarea( $field, $echo );
         }
 
-        // Decode HTML entities: the saved value is HTML-encoded (so GF's validator
-        // doesn't reject < and > characters). Decode before passing to wp_editor.
-        $raw   = $this->get_setting( 'message_body', '' );
-        $value = html_entity_decode( $raw, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+        // Saved value is HTML-encoded (so GF's sanitizer doesn't strip angle brackets).
+        // Decode for display in wp_editor, keep encoded for the hidden GF textarea.
+        $raw_encoded = $this->get_setting( 'message_body', '' );
+        $decoded     = html_entity_decode( $raw_encoded, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 
         ob_start();
+
+        // wp_editor uses a PRIVATE textarea name — GF never reads from this.
+        // The encoded value is in the hidden textarea below; JS keeps it in sync.
         wp_editor(
-            $value,
+            $decoded,
             'gfgc_message_body',
             [
-                'textarea_name' => '_gform_setting_message_body',
+                'textarea_name' => 'gfgc_body_raw',   // ← private, GF ignores it
                 'textarea_rows' => 10,
                 'teeny'         => false,
                 'media_buttons' => false,
@@ -98,9 +101,20 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             ]
         );
 
-        // Hidden merge-tag-support input: GF attaches its merge tag picker to this.
-        // admin.js watches this input and forwards selected tags into TinyMCE.
-        echo '<input type="hidden" id="gfgc_mt_target" class="merge-tag-support mt-position-right mt-hide_all_fields" style="position:absolute;opacity:0;pointer-events:none;" />';
+        // Real GF hidden textarea — always contains HTML-encoded content.
+        // JS listens to TinyMCE onChange and immediately updates this.
+        printf(
+            '<textarea name="_gform_setting_message_body" id="gfgc_body_encoded" style="display:none;">%s</textarea>',
+            esc_textarea( $raw_encoded )
+        );
+
+        // Merge tag helper: GF attaches its {:-} picker button to visible inputs with
+        // merge-tag-support class. JS watches this input and forwards the selected tag
+        // into TinyMCE, then clears it.
+        echo '<div style="margin-top:6px;display:flex;align-items:center;gap:6px;">';
+        echo '<span style="font-size:12px;color:#666;">Insert merge tag:</span>';
+        echo '<input type="text" id="gfgc_mt_target" class="merge-tag-support mt-hide_all_fields" style="width:220px;font-size:12px;" placeholder="Click {:-} to pick a field" readonly />';
+        echo '</div>';
 
         $html = ob_get_clean();
 
