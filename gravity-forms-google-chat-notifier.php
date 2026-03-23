@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      1.5.7
+ * Version:      1.5.8
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '1.5.7' );
+define( 'GFGC_VERSION', '1.5.8' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -243,5 +243,61 @@ function gfgc_resend_admin_notice() {
         echo '<div class="notice notice-success is-dismissible"><p>✅ <strong>Google Chat Notifier:</strong> Notification(s) sent. Check the entry notes for details.</p></div>';
     } elseif ( $status === 'error' ) {
         echo '<div class="notice notice-error is-dismissible"><p>❌ <strong>Google Chat Notifier:</strong> Failed to send. Check the entry notes and PHP error log.</p></div>';
+    }
+}
+
+/**
+ * Handle duplicate feed action.
+ */
+add_action( 'admin_init', 'gfgc_maybe_handle_duplicate_feed' );
+
+function gfgc_maybe_handle_duplicate_feed() {
+    if ( empty( $_GET['gfgc_action'] ) || $_GET['gfgc_action'] !== 'duplicate_feed' ) {
+        return;
+    }
+
+    $feed_id = absint( rgar( $_GET, 'fid' ) );
+    $form_id = absint( rgar( $_GET, 'form_id' ) );
+
+    if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'gfgc_duplicate_feed' ) ) {
+        wp_die( 'Invalid security token.' );
+    }
+
+    if ( ! current_user_can( 'edit_others_posts' ) ) {
+        wp_die( 'Insufficient permissions.' );
+    }
+
+    if ( ! class_exists( 'GFAPI' ) ) {
+        wp_die( 'Gravity Forms not loaded.' );
+    }
+
+    $feed = GFAPI::get_feed( $feed_id );
+    if ( is_wp_error( $feed ) ) {
+        wp_safe_redirect( admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=gf-google-chat&id=' . $form_id . '&gfgc_dup=error' ) );
+        exit;
+    }
+
+    $meta              = rgar( $feed, 'meta', [] );
+    $meta['feed_name'] = 'Copy of ' . rgar( $meta, 'feed_name', 'Google Chat Notification' );
+
+    $new_id   = GFAPI::add_feed( $form_id, $meta, 'gf-google-chat' );
+    $redirect = admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=gf-google-chat&id=' . $form_id );
+    $redirect .= is_wp_error( $new_id ) ? '&gfgc_dup=error' : '&gfgc_dup=ok';
+
+    wp_safe_redirect( $redirect );
+    exit;
+}
+
+/**
+ * Show admin notice after duplicate.
+ */
+add_action( 'admin_notices', 'gfgc_duplicate_admin_notice' );
+
+function gfgc_duplicate_admin_notice() {
+    $status = sanitize_text_field( wp_unslash( $_GET['gfgc_dup'] ?? '' ) );
+    if ( $status === 'ok' ) {
+        echo '<div class="notice notice-success is-dismissible"><p>✅ <strong>Google Chat Notifier:</strong> Feed duplicated successfully.</p></div>';
+    } elseif ( $status === 'error' ) {
+        echo '<div class="notice notice-error is-dismissible"><p>❌ <strong>Google Chat Notifier:</strong> Failed to duplicate feed.</p></div>';
     }
 }

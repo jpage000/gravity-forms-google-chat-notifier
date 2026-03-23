@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.5.7';
+    protected $_version                  = '1.5.8';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -58,6 +58,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
         // Allow Feed Forge and GF native reprocessing to invoke process_feed().
         // gform_allow_feed_reprocessing defaults to false for all add-ons.
         add_filter( 'gform_allow_feed_reprocessing', [ $this, 'allow_feed_reprocessing' ], 10, 5 );
+        add_action( 'admin_enqueue_scripts', [ $this, 'localize_settings_js' ], 20 );
     }
 
     /**
@@ -108,9 +109,12 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             esc_textarea( $raw_encoded )
         );
 
-        // Merge tag helper: WITHOUT mt-position-right so GF places the {:-} button
-        // inline right here (below the editor), not hoisted to the section header.
-        echo '<input type="text" id="gfgc_mt_target" class="merge-tag-support mt-hide_all_fields" style="height:0;width:0;padding:0;border:0;margin:0;overflow:hidden;display:block;" tabindex="-1" />';
+        // Real textarea with merge-tag-support + mt-position-right.
+        // GF's JS uses DOM traversal (not visual position) to find the parent field
+        // container, so position:absolute still anchors the {:-} button to the
+        // Card Body label row — same as Title and Subtitle.
+        // GF writes the selected merge tag here; JS polls and forwards to TinyMCE.
+        echo '<textarea id="gfgc_mt_anchor" name="gfgc_mt_anchor" class="merge-tag-support mt-position-right mt-hide_all_fields" style="position:absolute;opacity:0;height:1px;min-height:1px;width:1px;border:0;padding:0;resize:none;overflow:hidden;" tabindex="-1"></textarea>';
 
         $html = ob_get_clean();
 
@@ -139,6 +143,19 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
         ];
 
         return array_merge( parent::scripts(), $scripts );
+    }
+
+    /**
+     * Localize JS data (nonce, admin_url) for the duplicate-feed feature.
+     * Hooked on admin_enqueue_scripts — runs after our script is registered.
+     */
+    public function localize_settings_js(): void {
+        $form_id = absint( rgget( 'id' ) );
+        wp_localize_script( 'gfgc-admin', 'gfgc_settings', [
+            'admin_url' => admin_url(),
+            'form_id'   => $form_id,
+            'dup_nonce' => wp_create_nonce( 'gfgc_duplicate_feed' ),
+        ] );
     }
 
     // -------------------------------------------------------------------------
