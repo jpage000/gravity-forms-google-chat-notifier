@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '1.5.5';
+    protected $_version                  = '1.5.6';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -108,11 +108,9 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
             esc_textarea( $raw_encoded )
         );
 
-        // Merge tag helper: same convention as title/subtitle — GF attaches the {:-}
-        // picker button to inputs with merge-tag-support + mt-position-right.
-        // NOT readonly so GF can write the selected tag to it.
-        // Visually hidden (not display:none, so GF still renders the button).
-        echo '<input type="text" id="gfgc_mt_target" class="merge-tag-support mt-position-right mt-hide_all_fields" style="position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;" tabindex="-1" aria-hidden="true" />';
+        // Merge tag helper: WITHOUT mt-position-right so GF places the {:-} button
+        // inline right here (below the editor), not hoisted to the section header.
+        echo '<input type="text" id="gfgc_mt_target" class="merge-tag-support mt-hide_all_fields" style="height:0;width:0;padding:0;border:0;margin:0;overflow:hidden;display:block;" tabindex="-1" />';
 
         $html = ob_get_clean();
 
