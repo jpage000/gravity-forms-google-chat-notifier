@@ -213,7 +213,7 @@ class GF_Google_Chat_Message {
             $form_id   = absint( rgar( $this->form, 'id' ) );
             $entry_url = admin_url( sprintf( 'admin.php?page=gf_entries&view=entry&id=%d&lid=%d', $form_id, $entry_id ) );
 
-            $buttons[] = $this->make_button( '📋 View Entry', $entry_url, true );
+            $buttons[] = $this->make_button( '📋 View Entry', $entry_url );
         }
 
         // Custom buttons from fixed slots 1–5.
