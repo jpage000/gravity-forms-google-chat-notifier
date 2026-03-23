@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      1.5.4
+ * Version:      1.5.5
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '1.5.4' );
+define( 'GFGC_VERSION', '1.5.5' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -59,12 +59,30 @@ function gfgc_process_submission( $entry, $form ) {
 
         $settings = rgar( $feed, 'meta' );
 
-        // Check conditional logic if enabled.
-        $condition_enabled = rgar( $settings, 'feed_condition_enabled' );
-        if ( $condition_enabled ) {
-            $logic = rgar( $settings, 'feed_condition_conditional_logic' );
-            if ( ! GFCommon::evaluate_conditional_logic( $logic, $form, $entry ) ) {
+        // Check conditional logic — use GFFeedAddOn's own is_condition_met() so
+        // we handle the meta keys exactly the same way GF does natively.
+        $addon = GF_Google_Chat_AddOn::get_instance();
+        if ( method_exists( $addon, 'is_condition_met' ) ) {
+            if ( ! $addon->is_condition_met( $feed, $entry, $form ) ) {
                 continue;
+            }
+        } else {
+            // Fallback for older GF: check using the correct meta keys.
+            // 'feed_condition_conditional_logic' = "1" when enabled (not 'feed_condition_enabled').
+            // 'feed_condition_conditional_logic_object' = the actual rules object.
+            $condition_enabled = rgar( $settings, 'feed_condition_conditional_logic' );
+            if ( $condition_enabled ) {
+                $logic_wrapper = rgar( $settings, 'feed_condition_conditional_logic_object' );
+                if ( ! empty( $logic_wrapper ) ) {
+                    $logic = json_decode( json_encode( $logic_wrapper ), true );
+                    // Unwrap the 'conditionalLogic' key if present.
+                    if ( isset( $logic['conditionalLogic'] ) ) {
+                        $logic = $logic['conditionalLogic'];
+                    }
+                    if ( ! GFCommon::evaluate_conditional_logic( $logic, $form, $entry ) ) {
+                        continue;
+                    }
+                }
             }
         }
 
