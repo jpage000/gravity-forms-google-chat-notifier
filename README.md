@@ -1,17 +1,6 @@
 # Gravity Forms Google Chat Notifier
 
-Send rich **Google Chat card notifications with clickable buttons** to any Space or Direct Message (DM) when a Gravity Form is submitted. No Zapier, no middleware — direct webhook integration.
-
----
-
-## Features
-
-- **Per-form feeds**: Create as many feeds as you like per form. Each feed goes to a different Space or DM.
-- **Rich Cards v2**: Messages appear as beautiful Google Chat cards with a header, subtitle, and body text.
-- **Merge tags**: Use any Gravity Forms merge tag (`{Name:1}`, `{Email:2}`, `{all_fields}`, etc.) in titles and body copy.
-- **Buttons**: Add any number of custom URL buttons to your card (e.g., "View in CRM", "Open Policy"). Supports merge tags in button URLs.
-- **View Entry button**: Optionally auto-include a "📋 View Entry" button linking directly to the WP Admin entry page.
-- **Conditional logic**: Use GF's built-in conditional logic to only send notifications when certain conditions are met.
+Send rich **Google Chat card notifications** to any Space or Direct Message when a Gravity Form is submitted. No Zapier, no middleware — direct webhook integration.
 
 ---
 
@@ -25,96 +14,149 @@ Send rich **Google Chat card notifications with clickable buttons** to any Space
 
 ## Installation
 
-1. Upload the `gravity-forms-google-chat-notifier` folder to `/wp-content/plugins/`.
-2. Activate the plugin in **WP Admin → Plugins**.
-3. No global settings needed — everything is configured per-form.
+1. Download the zip file.
+2. In WP Admin go to **Plugins → Add New → Upload Plugin**.
+3. Upload the zip and click **Install Now**, then **Activate**.
+4. No global settings needed — everything is configured per-form.
 
 ---
 
-## Setting Up a Google Chat Webhook
+## Step 1 — Create a Google Chat Webhook
 
 ### For a Space
 1. Open Google Chat and go to your Space.
-2. Click the ⚙️ (gear) icon next to the space name → **Apps & Integrations**.
+2. Click the **Space name** at the top → **Apps & Integrations**.
 3. Click **Webhooks** → **Add Webhook**.
-4. Give it a name (e.g., "Lead Notifications"), click **Save**.
-5. Copy the Webhook URL.
+4. Give it a name (e.g., "Lead Notifications") and click **Save**.
+5. Copy the **Webhook URL** — you'll paste it into the feed settings.
 
 ### For a Direct Message (DM)
-1. Open Google Chat and go to the DM thread with the person.
-2. Click their **name at the top** of the conversation → **Apps & Integrations**.
-3. Click **Webhooks** → **Add Webhook**.
-4. Give it a name, click **Save**, and copy the Webhook URL.
+1. Open Google Chat and go to the DM.
+2. Click the person's **name at the top** → **Apps & Integrations**.
+3. Click **Webhooks** → **Add Webhook**, give it a name, and copy the URL.
+
+> ⚠️ Webhook URLs look like: `https://chat.googleapis.com/v1/spaces/xxxx/messages?key=...`
 
 ---
 
-## Configuring a Feed
+## Step 2 — Configure a Feed
 
-1. In WP Admin, go to **Forms** → *(select your form)* → **Settings** → **Google Chat Notifier**.
+1. In WP Admin, go to **Forms** → select your form → **Settings** → **Google Chat** (look for the chat bubble icon).
 2. Click **Add New**.
-3. Fill in:
-   - **Feed Name**: Internal label (e.g., "Sales Space", "John DM").
-   - **Webhook URL**: Paste the Google Chat webhook URL.
-   - **Card Title**: Bold header (supports merge tags).
-   - **Card Body**: Main body text (supports merge tags and newlines).
-   - **View Entry Button**: Check to include an admin link button.
-   - **Custom Buttons**: Add rows of Label → URL pairs for custom buttons.
-4. Optionally configure Conditional Logic.
+3. Fill in the feed settings:
+
+| Field | Description |
+|---|---|
+| **Feed Name** | Internal label (e.g., "Sales Space", "John DM") |
+| **Webhook URL** | Paste the Google Chat webhook URL here |
+| **Card Title** | Bold header on the card — supports merge tags |
+| **Card Subtitle** | Optional subheading below the title |
+| **Card Body** | Main message content — use the **{Merge Tags}** button in the toolbar to insert field values |
+| **Card Icon** | Optional URL or image to show in the card header |
+| **View Entry Button** | Check to include an admin link button |
+| **Custom Buttons** | Add up to 5 clickable link buttons (Label + URL) |
+
+4. Optionally set **Conditional Logic** to only fire this feed when certain form answers match.
 5. Click **Save Settings**.
 
 ---
 
-## Example Merge Tags
+## Step 3 — Test It
+
+Submit a test entry on your form. The card should appear in your Google Chat Space or DM within a second or two.
+
+If nothing arrives:
+- Double-check the Webhook URL in the feed settings — it must start with `https://`.
+- Open **Forms → Entries → [your entry] → Notes** to see any error messages from the notifier.
+- Use the **💬 Google Chat Notifier** side panel on the entry detail page and click **Resend Now** to retry.
+
+---
+
+## Merge Tags
+
+Use any Gravity Forms merge tag in the title, subtitle, body, and button URLs:
 
 | Merge Tag | Output |
 |---|---|
+| `{Business Name:2}` | Value of field ID 2 |
+| `{Name (First):1.3}` | First name sub-field |
+| `{all_fields}` | All submitted fields as a formatted list |
 | `{form_title}` | The form's name |
 | `{entry_id}` | The entry ID number |
-| `{all_fields}` | All submitted fields formatted as a list |
-| `{Name (First):1.3}` | A specific named field value |
-| `{Date Created}` | Submission date/time |
+| `{date_mdy}` | Submission date |
+
+In the **Card Body** editor, click the **`{Merge Tags}`** button in the toolbar to browse and insert tags.
+
+---
+
+## Resending Notifications
+
+Every entry detail page has a **💬 Google Chat Notifier** panel in the sidebar with a **Resend Now** button. This re-fires all active feeds for that entry — useful for testing or recovering from a temporary webhook outage.
+
+---
+
+## Duplicating Feeds
+
+On the feed list page, each feed row has a **Duplicate** link. Use this to quickly copy a feed and change just the webhook URL or conditional logic for routing to a different Space.
 
 ---
 
 ## Changelog
 
+### 1.6.3
+- **`{Merge Tags}` toolbar button** in WP Editor — browse and insert merge tags at cursor
+- Duplicate feed link only shows on forms with existing feeds
+- Google Chat icon in GF form settings navigation
+
+### 1.6.0
+- **TinyMCE merge tag button** — custom `{Merge Tags}` dropdown in editor toolbar
+- **Duplicate feed** — clone any feed from the feed list
+- Fixed TinyMCE `setup` callback timing for reliable button registration
+
+### 1.5.9
+- Google Chat icon in GF form settings tab
+
+### 1.5.8
+- Duplicate feed action + admin notice
+- Merge tag helper: positioned textarea approach
+
+### 1.5.5
+- **Fixed conditional logic** — was reading wrong meta keys; now uses `GFFeedAddOn::is_condition_met()`
+
+### 1.5.3
+- **WP Editor for Card Body** — full TinyMCE with toolbar; HTML-encoded round-trip to bypass GF validator
+- **Line break fix** — paragraphs and line breaks now render correctly in Google Chat
+
+### 1.5.0
+- WordPress Editor (TinyMCE) for card body
+- `html_to_chat()` converter for TinyMCE output
+
+### 1.4.6
+- **Card Subtitle** — editable field with merge tag support; leave blank to hide
+
+### 1.4.5
+- **Markdown support** in body (`**bold**`, `_italic_`, etc.)
+- Fixed double-spacing in messages
+
+### 1.4.3
+- Real-time URL validation with inline error messages
+- Processing-time warning notes for invalid URLs
+
 ### 1.4.0
-- **"Resend to Google Chat" entry action** — bypasses GF's batch system entirely; appears in the entry detail Actions menu and re-fires our direct hook immediately; shows an admin notice and entry note with the result
-
-### 1.3.5
-- **Fixed Feed Forge batch error** — removed custom constructor calling `parent::__construct()` (conflicted with GF's batch processor instantiation); replaced with `is_active()` override returning `true` and `init()` override for hooks
-
-### 1.3.4
-- **Fixed Feed Forge / reprocessing** — added `gform_allow_feed_reprocessing` filter returning `true` for our feeds; GFFeedAddOn defaults this to `false` and silently skips `process_feed()` during all manual reprocessing (including Gravity Wiz Feed Forge)
+- **"Resend to Google Chat"** entry action — re-fires all active feeds for an entry
 
 ### 1.3.3
-- **Fixed custom buttons** — replaced non-rendering `repeater` field with 5 fixed Label + URL slot pairs that work in all GF versions; empty slots are ignored
-
-### 1.3.2
-- **HTML formatting in card body** — `<b>`, `<i>`, `<u>`, `<s>`, `<font color="">`, `<a href="">` tags now pass through to Google Chat instead of being escaped as plain text
+- Fixed custom buttons — switched from broken `repeater` to 5 fixed Label+URL slot pairs
 
 ### 1.3.1
-- **Media Library icon picker** — "Card Icon URL" field now has a "📁 Select Image" button that opens the WordPress Media Library, with a live circular thumbnail preview
+- Media Library picker for Card Icon URL field
 
 ### 1.3.0
-- **Custom icon per feed** — new "Card Icon URL" field in feed settings; leave blank to use the default icon
-- **Fixed buttons** — switched from `generic_map` to `repeater` field; `generic_map` was storing free-text entries under `custom_key`/`custom_value` instead of `key`/`value`, causing custom buttons to be ignored
-- **Fixed feed reprocessing** — added `supports_async_feed_processing() = false` to skip GF's batch system on manual reprocess
+- Custom icon per feed
+- Fixed buttons and feed reprocessing
 
 ### 1.2.2
-- Rewrote feed processing: now uses a direct `gform_after_submission` hook with `GFAPI::get_feeds()` instead of relying on GFFeedAddOn's internal processing pipeline, which was silently failing to call `process_feed()`
-- GFFeedAddOn is now used for the admin settings UI and feed storage only
-- Added `error_log()` output for every send attempt (check server PHP error log for diagnostics)
-
-### 1.2.1
-- Fixed silent PHP failure: constants `GFGC_VERSION` and `GFGC_PLUGIN_FILE` moved from class property defaults into the constructor so they resolve correctly at runtime — this was preventing the add-on from registering its hooks entirely
-
-### 1.2.0
-- Fixed feed reprocessing batch error — `$_full_path` now correctly points to the main plugin file so GF can initialize the add-on during background/batch processing
-
-### 1.1.0
-- Added explicit entry notes labeled **"Google Chat Notifier [Feed Name]"** on success and failure — clearly distinguishable from other webhook feeds in the GF entry detail view
-- Error notes include the HTTP status code and response body for easier debugging
+- Rewrote feed processing using direct `gform_after_submission` hook (bypasses GFFeedAddOn pipeline)
 
 ### 1.0.0
 - Initial release
