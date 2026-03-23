@@ -31,7 +31,7 @@ window.gfgcSetupEditor = function ( editor ) {
 
 	editor.addButton( 'gfmergetag', {
 		type   : 'menubutton',
-		text   : '{: }',
+		text   : '{Merge Tags}',
 		icon   : false,
 		tooltip: 'Insert Merge Tag',
 		menu   : menuItems,
@@ -137,7 +137,9 @@ window.gfgcSetupEditor = function ( editor ) {
 
 			function injectDuplicateLinks() {
 				$( 'tr' ).filter( function () {
-					return ! $( this ).data( 'gfgc-dup' ) && $( this ).find( 'a[href*="fid="]' ).length;
+					// Only rows that link to our addon's settings with a feed ID.
+					var $link = $( this ).find( 'a[href*="fid="][href*="gf-google-chat"]' );
+					return ! $( this ).data( 'gfgc-dup' ) && $link.length;
 				} ).each( function () {
 					var $row = $( this );
 					$row.data( 'gfgc-dup', true );
