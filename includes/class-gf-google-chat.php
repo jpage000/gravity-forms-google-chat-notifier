@@ -17,7 +17,7 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     // Add-On identity
     // -------------------------------------------------------------------------
 
-    protected $_version                  = '2.0.1';
+    protected $_version                  = '2.0.5';
     protected $_min_gravityforms_version = '2.5';
     protected $_slug                     = 'gf-google-chat';
     protected $_path                     = 'gravity-forms-google-chat-notifier/gravity-forms-google-chat-notifier.php';
@@ -72,6 +72,32 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
         // gform_allow_feed_reprocessing defaults to false for all add-ons.
         add_filter( 'gform_allow_feed_reprocessing', [ $this, 'allow_feed_reprocessing' ], 10, 5 );
         add_action( 'admin_enqueue_scripts', [ $this, 'localize_settings_js' ], 20 );
+
+        // Show live Pro/free status on our settings page — runs after options are
+        // saved, so it always reflects the current license state even right after save.
+        add_action( 'admin_notices', [ $this, 'show_pro_status_notice' ] );
+    }
+
+    /**
+     * Shows the Pro/free status banner on the Google Chat plugin settings screen.
+     * Kept in admin_notices (not plugin_settings_fields) so it reflects the
+     * saved DB value rather than a value baked in before the POST is processed.
+     */
+    public function show_pro_status_notice(): void {
+        $screen = get_current_screen();
+        // Only show on our plugin settings page.
+        if ( ! $screen || strpos( $screen->id, 'gf-google-chat' ) === false ) {
+            return;
+        }
+        // Skip if the Pro plugin's own notice will handle this.
+        if ( apply_filters( 'gfgc_is_pro_active', false ) ) {
+            return; // Pro plugin shows its own "✅ active" notice.
+        }
+        echo '<div class="notice notice-info">'
+           . '<p>ℹ️ <strong>Google Chat Notifier</strong> — running the <strong>free</strong> version. '
+           . 'Limited to 1 active feed per form. '
+           . '<a href="https://goat-getter.com/gf-google-chat-pro" target="_blank"><strong>Upgrade to Pro →</strong></a>'
+           . '</p></div>';
     }
 
     /**
@@ -360,6 +386,29 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
     }
 
     /**
+     * Plugin-level settings page (Forms → Settings → Google Chat).
+     * Returns the base fields and allows Pro to inject the license key field
+     * via the `gfgc_plugin_settings_fields` filter.
+     */
+    public function plugin_settings_fields(): array {
+        $fields = [
+            [
+                'title'  => 'Google Chat Notifier',
+                'fields' => [
+                    [
+                        'name' => 'gfgc_info',
+                        'type' => 'html',
+                        'html' => '<p>Configure Google Chat notification feeds on each individual form under <strong>Form Settings → Google Chat</strong>.</p>',
+                    ],
+                ],
+            ],
+        ];
+
+        // Allow the Pro plugin to inject the license key field.
+        return apply_filters( 'gfgc_plugin_settings_fields', $fields );
+    }
+
+    /**
      * Disable async/batch processing so GF calls process_feed() synchronously
      * on manual feed reprocessing — avoids the "failed to create batch" error.
      */
@@ -380,63 +429,11 @@ class GF_Google_Chat_AddOn extends GFFeedAddOn {
      * @param array $form   GF form array.
      */
     public function process_feed( $feed, $entry, $form ) {
-        $settings  = rgar( $feed, 'meta' );
-        $feed_name = rgar( $settings, 'feed_name', 'Google Chat Notification' );
-        $entry_id  = absint( rgar( $entry, 'id' ) );
-
-        $webhook_url = trim( rgar( $settings, 'webhook_url' ) );
-        if ( empty( $webhook_url ) ) {
-            $msg = sprintf( '❌ Google Chat Notifier [%s]: Webhook URL is empty — feed not sent.', $feed_name );
-            $this->log_error( __METHOD__ . '(): ' . $msg );
-            $this->add_entry_note( $entry_id, $msg, 'error' );
-            return;
-        }
-
-        // Button data (btn1_label/btn1_url…btn5_label/btn5_url) is read directly
-        // from $settings by GF_Google_Chat_Message — no normalization needed.
-        $message_builder = new GF_Google_Chat_Message( $form, $entry, $settings );
-        $payload         = $message_builder->build();
-
-        $response = wp_remote_post(
-            $webhook_url,
-            [
-                'headers'     => [ 'Content-Type' => 'application/json' ],
-                'body'        => wp_json_encode( $payload ),
-                'timeout'     => 15,
-                'redirection' => 0,
-                'data_format' => 'body',
-            ]
-        );
-
-        if ( is_wp_error( $response ) ) {
-            $error_msg = $response->get_error_message();
-            $this->log_error( __METHOD__ . '(): wp_remote_post error — ' . $error_msg );
-            $this->add_entry_note(
-                $entry_id,
-                sprintf( '❌ Google Chat Notifier [%s]: Failed to send — %s', $feed_name, $error_msg ),
-                'error'
-            );
-            return;
-        }
-
-        $code = wp_remote_retrieve_response_code( $response );
-        $body = wp_remote_retrieve_body( $response );
-
-        if ( $code < 200 || $code >= 300 ) {
-            $this->log_error( __METHOD__ . '(): Google Chat returned HTTP ' . $code . ' — ' . $body );
-            $this->add_entry_note(
-                $entry_id,
-                sprintf( '❌ Google Chat Notifier [%s]: HTTP %d error — %s', $feed_name, $code, $body ),
-                'error'
-            );
-        } else {
-            $this->log_debug( __METHOD__ . '(): Notification sent successfully. HTTP ' . $code );
-            $this->add_entry_note(
-                $entry_id,
-                sprintf( '✅ Google Chat Notifier [%s]: Message sent successfully.', $feed_name ),
-                'success'
-            );
-        }
+        // Intentionally empty — all processing is handled by gfgc_process_submission()
+        // which is hooked directly on gform_after_submission in the main plugin file.
+        // Leaving this active caused every submission to send two Chat notifications:
+        // once via this GFFeedAddOn path and once via the standalone hook.
+        return;
     }
 
     // -------------------------------------------------------------------------

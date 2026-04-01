@@ -3,7 +3,7 @@
  * Plugin Name:  Gravity Forms Google Chat Notifier
  * Plugin URI:   https://gravitypipeline.io
  * Description:  Send rich Google Chat card notifications (with clickable buttons) to any Space or DM when a Gravity Form is submitted.
- * Version:      2.0.1
+ * Version:      2.0.5
  * Author:       Goat Getter
  * Author URI:   https://goat-getter.com
  * License:      GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'GFGC_VERSION', '2.0.1' );
+define( 'GFGC_VERSION', '2.0.5' );
 define( 'GFGC_PLUGIN_FILE', __FILE__ );
 define( 'GFGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFGC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -33,6 +33,31 @@ function gfgc_load_addon() {
     require_once GFGC_PLUGIN_DIR . 'includes/class-gf-google-chat.php';
 
     GFAddOn::register( 'GF_Google_Chat_AddOn' );
+}
+
+// ─── Plugins page: "Upgrade to Pro" action link ───────────────────────────────
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'gfgc_action_links' );
+
+function gfgc_action_links( array $links ): array {
+    // Only show when Pro is not active.
+    if ( ! apply_filters( 'gfgc_is_pro_active', false ) ) {
+        $links['upgrade'] = '<a href="https://goat-getter.com/gf-google-chat-pro" target="_blank" style="color:#d63638;font-weight:600;">⭐ Upgrade to Pro</a>';
+    }
+    return $links;
+}
+
+// ─── Plugins page: row meta links (Docs, Pro) ─────────────────────────────────
+add_filter( 'plugin_row_meta', 'gfgc_plugin_row_meta', 10, 2 );
+
+function gfgc_plugin_row_meta( array $links, string $file ): array {
+    if ( plugin_basename( __FILE__ ) !== $file ) {
+        return $links;
+    }
+    $links[] = '<a href="https://gravitypipeline.io/docs/google-chat-notifier" target="_blank">Documentation</a>';
+    if ( ! apply_filters( 'gfgc_is_pro_active', false ) ) {
+        $links[] = '<a href="https://goat-getter.com/gf-google-chat-pro" target="_blank" style="font-weight:600;">Get Pro — unlimited feeds + buttons</a>';
+    }
+    return $links;
 }
 
 // ─── Direct submission hook (primary processing path) ────────────────────────
@@ -130,23 +155,22 @@ function gfgc_process_submission( $entry, $form ) {
         $payload  = ( new GF_Google_Chat_Message( $form, $entry, $settings ) )->build();
         $json     = wp_json_encode( $payload );
 
+        // Fire-and-forget — do NOT block form submission waiting for Google Chat to respond.
+        // A 15-second blocking call here was causing PHP to time out and return a 500
+        // before the form confirmation could be delivered to the browser.
         $response = wp_remote_post( $webhook_url, [
             'headers'     => [ 'Content-Type' => 'application/json' ],
             'body'        => $json,
-            'timeout'     => 15,
+            'timeout'     => 5,
+            'blocking'    => false,
             'redirection' => 0,
             'data_format' => 'body',
         ] );
 
         if ( is_wp_error( $response ) ) {
-            gfgc_add_note( $entry_id, sprintf( '❌ Google Chat Notifier [%s]: %s', $feed_name, $response->get_error_message() ) );
+            gfgc_add_note( $entry_id, sprintf( '❌ Google Chat Notifier [%s]: Failed to dispatch — %s', $feed_name, $response->get_error_message() ) );
         } else {
-            $code = wp_remote_retrieve_response_code( $response );
-            if ( $code >= 200 && $code < 300 ) {
-                gfgc_add_note( $entry_id, sprintf( '✅ Google Chat Notifier [%s]: Message sent successfully.', $feed_name ) );
-            } else {
-                gfgc_add_note( $entry_id, sprintf( '❌ Google Chat Notifier [%s]: HTTP %d — %s', $feed_name, $code, wp_remote_retrieve_body( $response ) ) );
-            }
+            gfgc_add_note( $entry_id, sprintf( '📤 Google Chat Notifier [%s]: Message dispatched to webhook.', $feed_name ) );
         }
         $processed_count++;
     }
@@ -156,8 +180,8 @@ function gfgc_process_submission( $entry, $form ) {
  * Add a system note to a GF entry.
  */
 function gfgc_add_note( int $entry_id, string $message ) {
-    if ( class_exists( 'GFFormsModel' ) && $entry_id > 0 ) {
-        GFFormsModel::add_note( $entry_id, 0, 'Google Chat Notifier', $message );
+    if ( class_exists( 'GFAPI' ) && $entry_id > 0 ) {
+        GFAPI::add_note( $entry_id, 0, 'Google Chat Notifier', $message );
     }
     error_log( 'GFGC: ' . $message );
 }
